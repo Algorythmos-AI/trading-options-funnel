@@ -1,0 +1,25 @@
+# Install once per checkout: `make hooks` (this file for commits, scripts/pre-push for pushes).
+# No whitespace or end-of-file fixers: sealed evidence stays byte-for-byte.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+      - id: check-merge-conflict
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        language: system
+        entry: .venv/bin/ruff check --force-exclude
+        types: [python]

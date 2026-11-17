@@ -5,6 +5,7 @@
 # python
 __pycache__/
 .venv/
+.venv-wt/
 *.pyc
 .pytest_cache/
 .mypy_cache/
@@ -14,3 +15,4 @@ __pycache__/
 # local scratch
 /var/
 .DS_Store
+*.egg-info/
