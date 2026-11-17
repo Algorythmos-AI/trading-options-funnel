@@ -9,7 +9,7 @@ import pytest
 from options_funnel import desk
 from options_funnel.blind import assert_blind
 from options_funnel.cli import EXIT_INPUT, EXIT_MISMATCH, EXIT_SEALED_DIFFERENT
-from options_funnel.seal import KINDS, OPTIONAL, seal, verify
+from options_funnel.seal import KINDS, OPTIONAL, seal, sha256, verify
 
 S, NEXT = "2026-11-17", "2026-11-18"  # a Tuesday and the Wednesday after it
 NAMES = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "PLTR", "AVGO", "AMD"]
@@ -332,3 +332,98 @@ def test_check_takes_only_the_session_folders(tmp_path: Path) -> None:
     (root / "data" / desk.KIND / f"{S}.bak").mkdir()
     assert desk.main(["check", "--root", str(root), "--session", S]) == 0
     assert desk.main(["check", "--root", str(root), "--session", "2026-11-1"]) == EXIT_INPUT
+
+
+# ---------------------------------------------------------------------------------------------------------- send
+
+import threading  # noqa: E402
+from http.server import BaseHTTPRequestHandler, HTTPServer  # noqa: E402
+from typing import ClassVar  # noqa: E402
+
+import jsonschema  # noqa: E402
+
+from options_funnel.cli import EXIT_SEND  # noqa: E402
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+DASHBOARD_SCHEMA = json.loads((ROOT_DIR / "contracts" / "radar-desk.schema.json").read_text())
+
+
+def test_the_contract_copy_is_the_pinned_one() -> None:
+    import hashlib
+
+    lock = json.loads((ROOT_DIR / "contracts" / "radar-desk.contract.lock.json").read_text())
+    data = (ROOT_DIR / "contracts" / "radar-desk.schema.json").read_bytes()
+    assert hashlib.sha256(data).hexdigest() == lock["sha256"]
+    assert lock["source_path"] == "dashboard/src/lib/radar-desk.schema.json"
+
+
+@pytest.mark.parametrize("with_focus", [True, False])
+def test_dashboard_doc_matches_the_dashboard_schema(tmp_path: Path, with_focus: bool) -> None:
+    root = data_root(tmp_path, with_focus=with_focus)
+    assert run_seal(root, tmp_path, "--wt-commit", "b" * 40) == 0
+    folder = root / "data" / desk.KIND / S
+    doc = desk.dashboard_doc(folder)
+    jsonschema.validate(doc, DASHBOARD_SCHEMA)
+    assert doc["schema"] == "stocksdelta/radar-desk"
+    assert doc["run_id"] == sha256((folder / desk.DESK).read_bytes())
+    assert "inputs" not in doc
+    assert_blind(doc)
+
+
+def test_out_of_range_values_become_null(tmp_path: Path) -> None:
+    ed = edition()
+    tickers = ed["tickers"]
+    assert isinstance(tickers, list)
+    tickers[0].update({"evidence_grade": 5, "chart_grade": 0, "support": -1.0, "resistance": 2e6})
+    root = data_root(tmp_path, ed=ed)
+    assert run_seal(root, tmp_path) == 0
+    doc = desk.dashboard_doc(root / "data" / desk.KIND / S)
+    jsonschema.validate(doc, DASHBOARD_SCHEMA)
+    first = by_name(doc)[tickers[0]["symbol"]]["radar"]
+    assert (first["evidence_grade"], first["chart_grade"], first["support"], first["resistance"]) == (None,) * 4
+
+
+class _Dashboard(BaseHTTPRequestHandler):
+    accepts: ClassVar[int | None] = 1
+    received: ClassVar[list[dict[str, Any]]] = []
+
+    def do_GET(self) -> None:  # noqa: N802
+        body = json.dumps({"editions": {"radar_desk": {"accepts": self.accepts}}}).encode()
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self) -> None:  # noqa: N802
+        length = int(self.headers["content-length"])
+        doc = json.loads(self.rfile.read(length))
+        type(self).received.append({"doc": doc, "key": self.headers["x-wt-key-id"]})
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'{"status": "stored"}')
+
+    def log_message(self, *args: object) -> None:
+        return
+
+
+def test_send(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    root = data_root(tmp_path)
+    assert run_seal(root, tmp_path) == 0
+    server = HTTPServer(("127.0.0.1", 0), _Dashboard)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    args = ["send", "--root", str(root), "--session", S, "--base", base]
+    try:
+        monkeypatch.delenv("RADAR_INGEST_SECRET", raising=False)
+        assert desk.main(args) == EXIT_SEND  # no secret
+        monkeypatch.setenv("RADAR_INGEST_SECRET", "s3cret")
+        _Dashboard.received = []
+        assert desk.main(args) == 0
+        assert "HTTP 200 stored" in capsys.readouterr().out
+        assert _Dashboard.received[0]["key"] == "radar"
+        jsonschema.validate(_Dashboard.received[0]["doc"], DASHBOARD_SCHEMA)
+        _Dashboard.accepts = None
+        assert desk.main(args) == EXIT_SEND  # the site does not know the kind yet
+        assert desk.main(["send", "--root", str(root), "--session", "2026-11-18", "--base", base]) == EXIT_INPUT
+    finally:
+        _Dashboard.accepts = 1
+        server.shutdown()
