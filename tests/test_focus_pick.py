@@ -1,6 +1,8 @@
+import copy
 import csv
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -105,3 +107,65 @@ def test_option_volume_ratio() -> None:
     assert option_volume_ratio(None) is None
     assert option_volume_ratio({**row, "avg_call_vol": "0", "avg_put_vol": "0"}) is None
     assert option_volume_ratio({**row, "call_vol": ""}) is None
+
+
+def _ticker(close: float, levels: list[dict[str, object]]) -> dict[str, object]:
+    return {"last": {"close": close}, "atr14": 1.0, "levels": levels, "close_strength": {"chip": "MID"}}
+
+
+def test_spy_earning_its_slot_on_score_says_so() -> None:
+    near = [{"name": "PDH", "price": 100.5}]
+    doc = {
+        "session": "2026-11-18",
+        "built_from": "2026-11-17",
+        "tickers": {"SPY": _ticker(100.0, near), "AAA": _ticker(100.0, [{"name": "PDH", "price": 200.0}])},
+    }
+    reasons = {r.symbol: r.reason for r in pick(doc, []).candidates}
+    assert reasons == {"SPY": "top_score", "AAA": "top_score"}
+
+
+def test_flags_show_the_option_volume_default() -> None:
+    doc = {"session": "2026-11-18", "built_from": "2026-11-17", "tickers": {"SPY": _ticker(100.0, [])}}
+    bad = {
+        "session": "2026-11-17",
+        "ticker": "SPY",
+        "call_vol": "",
+        "put_vol": "1",
+        "avg_call_vol": "1",
+        "avg_put_vol": "1",
+    }
+    good = {**bad, "call_vol": "1"}
+    assert pick(doc, []).candidates[0].flags == ("iv_row_missing", "option_volume_defaulted")
+    assert pick(doc, [bad]).candidates[0].flags == ("iv_row_unusable", "option_volume_defaulted")
+    assert pick(doc, [good]).candidates[0].flags == ()
+
+
+def test_context_hash_covers_other_names_and_built_from() -> None:
+    levels = json.loads((NIGHTS / "levels" / f"{SESSIONS[-1]}.json").read_text())
+    base = pick(levels, iv_rows()).candidates
+    assert len({r.context_sha256 for r in base}) == 1
+    changed = copy.deepcopy(levels)
+    first = next(iter(changed["tickers"]))
+    changed["tickers"][first]["atr14"] = 0
+    other = [r for r in pick(changed, iv_rows()).candidates if r.symbol != first]
+    original = {r.symbol: r for r in base}
+    assert all(r.inputs_sha256 == original[r.symbol].inputs_sha256 for r in other)
+    assert all(r.context_sha256 != original[r.symbol].context_sha256 for r in other)
+    moved = copy.deepcopy(levels)
+    moved["built_from"] = "2026-01-01"
+    assert pick(moved, []).candidates[0].context_sha256 != pick({**levels}, []).candidates[0].context_sha256
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda d: d["tickers"].update({"BRK-B": d["tickers"]["SPY"]}),
+        lambda d: d.update({"session": "tomorrow"}),
+        lambda d: d["tickers"]["SPY"].update({"atr14": float("nan")}),
+    ],
+)
+def test_names_a_record_cannot_describe_are_refused(change: Any) -> None:
+    levels = json.loads((NIGHTS / "levels" / f"{SESSIONS[-1]}.json").read_text())
+    change(levels)
+    with pytest.raises(ValueError):
+        pick(levels, iv_rows())

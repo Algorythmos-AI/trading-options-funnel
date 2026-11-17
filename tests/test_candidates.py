@@ -13,6 +13,7 @@ from options_funnel.candidates import (
 )
 
 SHA = inputs_sha256({"close": 1.5, "levels": [1, 2]})
+CTX = inputs_sha256({"all": True})
 
 
 def record(**changes: object) -> CandidateRecord:
@@ -23,6 +24,7 @@ def record(**changes: object) -> CandidateRecord:
         "verdict": Verdict.PICKED,
         "reason": "top_score",
         "inputs_sha256": SHA,
+        "context_sha256": CTX,
         "score": 3.25,
         "rank": 1,
     }
@@ -77,6 +79,12 @@ def test_hash_refuses_non_json(bad: object) -> None:
         {"score": 10**400},
         {"reason": "hit_t1_win"},
         {"reason": "stopped_out"},
+        {"context_sha256": "x"},
+        {"flags": ["iv_row_missing"]},
+        {"flags": ("b_flag", "a_flag")},
+        {"flags": ("a_flag", "a_flag")},
+        {"flags": ("Bad Flag",)},
+        {"flags": ("t1_hit",)},
         {"rank": 0},
         {"rank": 1.0},
         {"rank": True},
@@ -108,6 +116,8 @@ def test_duplicate_symbol_is_refused_on_write_and_read() -> None:
         row(schema="other"),
         row(stage="nope"),
         row(stage=1),
+        row(flags="iv_row_missing"),
+        row(flags=["z_flag", "a_flag"]),
         json.dumps({k: v for k, v in record().to_row().items() if k != "rank"}),
         '{"symbol":"NVDA",' + row()[1:],
         "[1]",
@@ -126,3 +136,8 @@ def test_score_has_one_spelling() -> None:
 def test_huge_score_in_a_file_reports_its_line() -> None:
     with pytest.raises(ValueError, match="line 1"):
         list(load_jsonl(row(score=10**400)))
+
+
+def test_flags_round_trip() -> None:
+    r = record(flags=("iv_row_missing", "score_tie"))
+    assert list(load_jsonl(dump_jsonl([r]))) == [r]

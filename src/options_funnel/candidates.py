@@ -1,4 +1,11 @@
-"""One record per candidate per stage: what was judged, the verdict, why, and a hash of the inputs it was judged on.
+"""One record per candidate per stage: what was judged, the verdict, why, and hashes of what it was judged on.
+
+- `inputs_sha256`: this name's own inputs.
+- `context_sha256`: everything the stage saw that session (every name's inputs, the method and its version), because
+  a verdict such as "picked #3" depends on the other names too. Two records with the same context hash were judged
+  on the same evidence by the same code.
+- `flags`: facts about the inputs that the verdict does not show, as snake_case codes (for example a missing
+  option-volume row that the stage replaced with a default).
 
 Records are written as JSON Lines, one file per session and stage, so any day can be replayed and compared.
 Reading is strict: exactly the known keys, exact types, no duplicate JSON keys, one spelling per value.
@@ -27,7 +34,20 @@ _SYMBOL = re.compile(r"[A-Z][A-Z0-9.]{0,9}")
 _REASON = re.compile(r"[a-z][a-z0-9_]{1,47}")
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _KEYS = frozenset(
-    {"schema", "schema_version", "session", "stage", "symbol", "verdict", "reason", "inputs_sha256", "score", "rank"}
+    {
+        "schema",
+        "schema_version",
+        "session",
+        "stage",
+        "symbol",
+        "verdict",
+        "reason",
+        "inputs_sha256",
+        "context_sha256",
+        "score",
+        "rank",
+        "flags",
+    }
 )
 
 
@@ -95,8 +115,10 @@ class CandidateRecord:
     verdict: Verdict
     reason: str
     inputs_sha256: str
+    context_sha256: str
     score: float | None = None
     rank: int | None = None
+    flags: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _text("session", self.session, _SESSION)
@@ -111,6 +133,15 @@ class CandidateRecord:
         if is_outcome_words(self.reason.split("_")):
             raise ValueError(f"reason {self.reason!r} names an outcome (blind rule)")
         _text("inputs_sha256", self.inputs_sha256, _SHA256)
+        _text("context_sha256", self.context_sha256, _SHA256)
+        if not isinstance(self.flags, tuple):
+            raise ValueError("flags must be a tuple")
+        for flag in self.flags:
+            _text("flag", flag, _REASON)
+            if is_outcome_words(flag.split("_")):
+                raise ValueError(f"flag {flag!r} names an outcome (blind rule)")
+        if list(self.flags) != sorted(set(self.flags)):
+            raise ValueError("flags must be sorted and unique")
         if self.score is not None:
             if isinstance(self.score, bool) or not isinstance(self.score, (int, float)):
                 raise ValueError("score must be a finite number or None")
@@ -136,8 +167,10 @@ class CandidateRecord:
             "verdict": self.verdict.value,
             "reason": self.reason,
             "inputs_sha256": self.inputs_sha256,
+            "context_sha256": self.context_sha256,
             "score": self.score,
             "rank": self.rank,
+            "flags": list(self.flags),
         }
         assert_blind(row)
         return row
@@ -157,6 +190,8 @@ class CandidateRecord:
         for name in ("stage", "verdict"):
             if not isinstance(row[name], str):
                 raise ValueError(f"bad {name} {row[name]!r}")
+        if not isinstance(row["flags"], list):
+            raise ValueError("flags must be a list")
         return cls(
             session=row["session"],
             stage=Stage(row["stage"]),
@@ -164,8 +199,10 @@ class CandidateRecord:
             verdict=Verdict(row["verdict"]),
             reason=row["reason"],
             inputs_sha256=row["inputs_sha256"],
+            context_sha256=row["context_sha256"],
             score=row["score"],
             rank=row["rank"],
+            flags=tuple(row["flags"]),
         )
 
 

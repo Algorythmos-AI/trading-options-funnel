@@ -9,6 +9,12 @@ It computes scores, never outcomes (blind rule, see AGENTS.md).
 Inputs (both exactly what the routine reads):
 - `levels`: one levels file (`options-tab/data/levels/<session>.json`): `session`, `built_from`, `tickers`.
 - `iv_rows`: the rows of `iv_history.csv` (dicts of strings); only rows whose `session` equals `built_from` count.
+  Every row must have a `session` and a `ticker` key, as in the cloud script (a missing one raises KeyError there too).
+
+Where the port deliberately stops instead of publishing: a name a `CandidateRecord` cannot describe (a symbol
+outside `[A-Z][A-Z0-9.]{0,9}`, a non-date session, NaN or infinity anywhere in a name's inputs or score) raises
+ValueError. The cloud script would publish such a night; the funnel refuses to record it rather than record it
+wrongly. On every other input the focus document is identical to the cloud script's (differential test).
 
 How a name is scored (the cloud script's docstring, restated):
 - a ladder of named levels (PDC and 52WL dropped; a DEMAND zone counts at its top, a SUPPLY zone at its bottom),
@@ -32,6 +38,8 @@ ALWAYS = "SPY"
 N = 4
 SKIP = frozenset({"PDC", "52WL"})
 METHOD = "Nearest level in ATRs, option activity and range, from the close; SPY always included."
+# Bump when this module's behaviour changes; it is part of every record's context hash.
+PICKER_VERSION = "focus.py@2026-10-27/port-1"
 
 Level = tuple[float, str]
 
@@ -128,7 +136,7 @@ def _score_row(sym: str, t: Mapping[str, Any], iv_row: Mapping[str, str] | None)
 def pick(levels: Mapping[str, Any], iv_rows: Iterable[Mapping[str, str]]) -> PickResult:
     """Pick the session's focus names exactly as the cloud script does, and record a verdict for every name."""
     session, built = levels["session"], levels.get("built_from")
-    iv = {r["ticker"]: r for r in iv_rows if r.get("session") == built}
+    iv = {r["ticker"]: r for r in iv_rows if r["session"] == built}
     rows: list[dict[str, Any]] = []
     not_scored: list[str] = []
     for sym, t in levels["tickers"].items():
@@ -146,24 +154,71 @@ def pick(levels: Mapping[str, Any], iv_rows: Iterable[Mapping[str, str]]) -> Pic
     document = {"session": session, "built_from": built, "method": METHOD, "items": top}
 
     picked = {r["symbol"]: r for r in top}
+    score_order = [r["symbol"] for r in rows]
+    inputs = {
+        sym: {"symbol": sym, "levels": t, "iv": dict(iv[sym]) if sym in iv else None}
+        for sym, t in levels["tickers"].items()
+    }
+    context = inputs_sha256(
+        {
+            "session": session,
+            "built_from": built,
+            "method": METHOD,
+            "picker_version": PICKER_VERSION,
+            "names": [inputs[sym] for sym in levels["tickers"]],
+        }
+    )
     records: list[CandidateRecord] = []
-    for sym, t in levels["tickers"].items():
-        digest = inputs_sha256({"symbol": sym, "levels": t, "iv": dict(iv[sym]) if sym in iv else None})
+    for sym in levels["tickers"]:
+        digest = inputs_sha256(inputs[sym])
+        flags = _flags(iv.get(sym))
         if sym in not_scored:
-            records.append(CandidateRecord(session, Stage.FOCUS_PICK, sym, Verdict.NOT_SCORED, "no_atr", digest))
-            continue
-        row = next(r for r in rows if r["symbol"] == sym)
-        if sym in picked:
-            reason = "spy_always" if sym == ALWAYS else "top_score"
             records.append(
                 CandidateRecord(
-                    session, Stage.FOCUS_PICK, sym, Verdict.PICKED, reason, digest, row["score"], picked[sym]["rank"]
+                    session, Stage.FOCUS_PICK, sym, Verdict.NOT_SCORED, "no_atr", digest, context, flags=flags
+                )
+            )
+            continue
+        score = next(r["score"] for r in rows if r["symbol"] == sym)
+        if sym in picked:
+            on_score = score_order.index(sym) < N
+            reason = "top_score" if on_score else "spy_always"
+            records.append(
+                CandidateRecord(
+                    session,
+                    Stage.FOCUS_PICK,
+                    sym,
+                    Verdict.PICKED,
+                    reason,
+                    digest,
+                    context,
+                    score,
+                    picked[sym]["rank"],
+                    flags,
                 )
             )
         else:
             records.append(
                 CandidateRecord(
-                    session, Stage.FOCUS_PICK, sym, Verdict.REJECTED, "below_top_four", digest, row["score"]
+                    session,
+                    Stage.FOCUS_PICK,
+                    sym,
+                    Verdict.REJECTED,
+                    "below_top_four",
+                    digest,
+                    context,
+                    score,
+                    None,
+                    flags,
                 )
             )
     return PickResult(document=document, candidates=tuple(records))
+
+
+def _flags(iv_row: Mapping[str, str] | None) -> tuple[str, ...]:
+    """The option-volume default the score used silently, made visible."""
+    if iv_row is None:
+        return ("iv_row_missing", "option_volume_defaulted")
+    if option_volume_ratio(iv_row) is None:
+        return ("iv_row_unusable", "option_volume_defaulted")
+    return ()
