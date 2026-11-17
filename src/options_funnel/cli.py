@@ -39,6 +39,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from options_funnel import calendar
 from options_funnel.blind import BlindRuleError, assert_blind
 from options_funnel.candidates import dump_jsonl
 from options_funnel.focus_pick import pick
@@ -229,12 +230,26 @@ def seal_radar(args: argparse.Namespace) -> int:
         if args.session and DATE_NAME.fullmatch(args.edition.stem) and args.edition.stem != args.session:
             raise InputError(f"--session {args.session} does not match the file's date {args.edition.stem}")
         skill = args.skill.read_bytes()
+        existing = _sealed_edition_sha(args.root, session)
+        if existing == sha256(edition) and not args.correction:
+            # The same edition again: nothing to seal, and no second directory fetch to disagree with the first.
+            print(f"already sealed, identical: {args.root / 'data' / 'radar' / session}")
+            return 0
+        directory_note: str
         if args.directory:
             directory = {name: (args.directory / name).read_bytes() for name in DIRECTORY_FILES}
             for name, data in directory.items():
                 check_directory_file(name, data)
+            directory_note = str(args.directory)
         else:
-            directory = fetch_directory()
+            try:
+                directory = fetch_directory()
+                directory_note = "nasdaqtrader.com/dynamic/SymDir"
+            except WitnessError as error:
+                # The edition is still sealed; DEC-0055 then does not count the session (no_directory).
+                print(f"warning: symbol directory not sealed: {error}", file=sys.stderr)
+                directory = {}
+                directory_note = f"unavailable: {error}"
     except (OSError, SealError, WitnessError, json.JSONDecodeError) as error:
         raise InputError(f"{type(error).__name__}: {error}") from error
     provenance = _base_provenance(args, {"edition": args.edition, "skill": args.skill})
@@ -243,15 +258,32 @@ def seal_radar(args: argparse.Namespace) -> int:
         "sent_at": args.sent_at,
         "skill_sha256": sha256(skill),
         "skill_size": len(skill),
-        "directory_source": str(args.directory) if args.directory else "nasdaqtrader.com/dynamic/SymDir",
+        "directory_source": directory_note,
+        "directory_fetched_at": _now() if directory else None,
     }
     return _seal(args, "radar", session, {"edition.json": edition, **directory}, provenance)
+
+
+def _sealed_edition_sha(root: Path, session: str) -> str | None:
+    """The edition.json sha256 of the latest sealed radar folder for `session`, or None when there is none."""
+    base = root / "data" / "radar"
+    folders = sorted(
+        (p for p in base.glob(f"{session}*") if p.is_dir()),
+        key=lambda p: int(p.name.split(".r")[1]) if ".r" in p.name else 1,
+    )
+    if not folders:
+        return None
+    manifest = json.loads((folders[-1] / "MANIFEST.json").read_text(encoding="utf-8"))
+    value = manifest.get("files", {}).get("edition.json", {}).get("sha256")
+    return value if isinstance(value, str) else None
 
 
 def seal_receipts(args: argparse.Namespace) -> int:
     try:
         check_session(args.date)
-    except SealError as error:
+        if not calendar.load().is_session(args.date):
+            raise InputError(f"{args.date} is not a regular New York session")
+    except (SealError, calendar.CalendarError) as error:
         raise InputError(str(error)) from error
     if not after_open(args.date, datetime.now(UTC)):
         raise InputError(f"too early: the listing for {args.date} is sealed only after 09:30 New York on that day")
@@ -260,7 +292,15 @@ def seal_receipts(args: argparse.Namespace) -> int:
     except WitnessError as error:
         print(f"not sealed: {error}", file=sys.stderr)
         return EXIT_SEND
-    provenance = _base_provenance(args, {}) | {"base": args.base}
+    sealed_sha = _sealed_edition_sha(args.root, args.date)
+    rows = json.loads(listing)["copies"]
+    provenance = _base_provenance(args, {}) | {
+        "base": args.base,
+        "radar_edition_sha256": sealed_sha,
+        "rows_matching_sealed_edition": [r["run_id"] for r in rows if sealed_sha and r["edition_sha256"] == sealed_sha],
+    }
+    # Sealed once: a listing that differs from the first is reported (exit 6), never sealed as a correction.
+    args.correction = False
     return _seal(args, "radar-receipts", args.date, {"listing.json": listing}, provenance)
 
 
@@ -363,7 +403,6 @@ def main(argv: list[str] | None = None) -> int:
     rr.add_argument("--date", required=True)
     rr.add_argument("--base", default=DEFAULT_BASE)
     rr.add_argument("--routine")
-    rr.add_argument("--correction", action="store_true")
     rr.set_defaults(run=seal_receipts)
     vf = sub.add_parser("verify", help="check sealed folders against their manifests")
     vf.add_argument("folders", type=Path, nargs="+")
