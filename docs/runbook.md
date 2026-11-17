@@ -38,3 +38,22 @@ The routines commit sealed evidence to `data` from claude.ai, where no pre-push 
 holds the rule itself: on `data`, every path outside `data/` must be byte-identical to `main`
 (`GATE_MAIN_REF`, default `origin/main`), and CI runs on every push to `data` once Actions can start. To bring a
 change from `main` into `data`, merge `main` into `data`; nothing else may change there.
+
+## Candidate records
+
+One JSON line per name per stage (`options_funnel.candidates`, schema `options-funnel/candidate` v1): `session`,
+`stage`, `symbol`, `verdict`, `reason`, `inputs_sha256` (this name's inputs), `context_sha256` (everything the stage
+saw that session, plus the method and its version), `score`, `rank`, `flags`. v1 took this shape before any record
+was written (2026-11-17); a later change of keys is v2.
+
+## Scoring a night with the ported picker
+
+```
+.venv/bin/python -m options_funnel.cli focus-pick levels/<session>.json iv_history.csv \
+    --candidates <session>.candidates.jsonl [--focus <session>.focus.json]
+```
+
+Exit codes: 0 done; 1 an output already exists (nothing written); 3 bad input; 4 an output could not be written
+(nothing left behind). A night containing NaN or infinity anywhere in a name's inputs, or a symbol or session a
+record cannot hold, is refused with exit 3, although the cloud script would publish it: fix the input, never the
+record.

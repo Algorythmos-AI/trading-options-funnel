@@ -1,10 +1,13 @@
+import errno
 import json
+import os
+import stat
 from pathlib import Path
 
 import pytest
 
 from options_funnel.candidates import load_jsonl
-from options_funnel.cli import EXIT_EXISTS, EXIT_INPUT, main
+from options_funnel.cli import EXIT_EXISTS, EXIT_INPUT, EXIT_WRITE, main
 
 NIGHTS = Path(__file__).resolve().parent / "fixtures" / "focus_nights"
 LEVELS = NIGHTS / "levels" / "2026-11-12.json"
@@ -68,3 +71,31 @@ def test_blind_failure_writes_nothing(tmp_path: Path) -> None:
 
 def test_missing_input_is_an_input_error(tmp_path: Path) -> None:
     assert run(tmp_path / "nope.json", IV, "--candidates", tmp_path / "c.jsonl") == EXIT_INPUT
+
+
+def test_a_failed_second_write_removes_the_first(tmp_path: Path) -> None:
+    out = tmp_path / "c.jsonl"
+    assert run(LEVELS, IV, "--candidates", out, "--focus", tmp_path / "nodir" / "f.json") == EXIT_WRITE
+    assert sorted(p.name for p in tmp_path.iterdir()) == []
+
+
+def test_outputs_get_the_plain_file_mode(tmp_path: Path) -> None:
+    out = tmp_path / "c.jsonl"
+    old = os.umask(0o022)
+    try:
+        assert run(LEVELS, IV, "--candidates", out) == 0
+    finally:
+        os.umask(old)
+    assert stat.S_IMODE(out.stat().st_mode) == 0o644
+
+
+def test_falls_back_when_hard_links_are_not_supported(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_links(src: object, dst: object) -> None:
+        raise OSError(errno.EPERM, "no hard links here")
+
+    monkeypatch.setattr(os, "link", no_links)
+    out = tmp_path / "c.jsonl"
+    assert run(LEVELS, IV, "--candidates", out) == 0
+    assert len(list(load_jsonl(out.read_text()))) == 12
+    assert [p.name for p in tmp_path.iterdir()] == ["c.jsonl"]
+    assert run(LEVELS, IV, "--candidates", out) == EXIT_EXISTS

@@ -28,6 +28,7 @@ How a name is scored (the cloud script's docstring, restated):
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -216,9 +217,13 @@ def pick(levels: Mapping[str, Any], iv_rows: Iterable[Mapping[str, str]]) -> Pic
 
 
 def _flags(iv_row: Mapping[str, str] | None) -> tuple[str, ...]:
-    """The option-volume default the score used silently, made visible."""
+    """What the score did with the option-volume row, made visible (the score itself is the cloud script's)."""
     if iv_row is None:
         return ("iv_row_missing", "option_volume_defaulted")
-    if option_volume_ratio(iv_row) is None:
+    ratio = option_volume_ratio(iv_row)
+    if ratio is None:
         return ("iv_row_unusable", "option_volume_defaulted")
+    if not math.isfinite(ratio):
+        # min(2.0, nan) is 2.0 and min(2.0, inf) is 2.0, so the score counted it as the cap: say so.
+        return ("option_volume_capped", "option_volume_not_finite")
     return ()

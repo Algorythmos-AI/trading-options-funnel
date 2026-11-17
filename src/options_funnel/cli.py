@@ -7,7 +7,8 @@ All checks run before anything is written. Each file is written to a temporary f
 into place, which fails if the target exists: a run never overwrites, and never leaves a partial file.
 
 Exit codes: 0 done; 1 an output already exists; 3 bad input (missing file, bad CSV header, a name the record
-cannot describe).
+cannot describe); 4 an output could not be written (missing folder, no permission, disk). On any failure after
+writing has started, every output this run created is removed again.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from options_funnel.focus_pick import pick
 IV_COLUMNS = frozenset({"session", "ticker", "call_vol", "put_vol", "avg_call_vol", "avg_put_vol"})
 EXIT_EXISTS = 1
 EXIT_INPUT = 3
+EXIT_WRITE = 4
 
 
 class InputError(ValueError):
@@ -43,17 +45,58 @@ def read_iv_history(path: Path) -> list[dict[str, str]]:
         return list(reader)
 
 
-def write_new(path: Path, text: str) -> None:
-    """Write `text` to `path` atomically; FileExistsError if `path` exists (checked by the link, not before it)."""
+def _prepare(path: Path, text: str) -> str:
+    """A flushed temporary file beside `path` holding `text`, with the mode a plain new file would get."""
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
+        umask = os.umask(0)
+        os.umask(umask)
+        os.fchmod(fd, 0o666 & ~umask)
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(text)
             fh.flush()
             os.fsync(fh.fileno())
-        os.link(tmp, path)
-    finally:
+    except BaseException:
         os.unlink(tmp)
+        raise
+    return tmp
+
+
+def _place(tmp: str, path: Path) -> None:
+    """Move `tmp` to `path`, failing with FileExistsError if `path` exists (no check-then-write race)."""
+    try:
+        os.link(tmp, path)
+    except FileExistsError:
+        raise
+    except OSError:
+        # A filesystem without hard links: fall back to an exclusive create and a copy of the bytes.
+        with open(tmp, "rb") as src, open(path, "xb") as dst:
+            try:
+                dst.write(src.read())
+                dst.flush()
+                os.fsync(dst.fileno())
+            except BaseException:
+                path.unlink(missing_ok=True)
+                raise
+
+
+def write_all_new(outputs: list[tuple[Path, str]]) -> None:
+    """Write every output or none: temporary files first, then each placed; on any failure, undo what was placed."""
+    temps: list[str] = []
+    placed: list[Path] = []
+    try:
+        for path, text in outputs:
+            temps.append(_prepare(path, text))
+        for (path, _), tmp in zip(outputs, temps, strict=True):
+            _place(tmp, path)
+            placed.append(path)
+    except BaseException:
+        for path in placed:
+            path.unlink(missing_ok=True)
+        raise
+    finally:
+        for tmp in temps:
+            Path(tmp).unlink(missing_ok=True)
 
 
 def focus_pick(args: argparse.Namespace) -> int:
@@ -74,16 +117,14 @@ def focus_pick(args: argparse.Namespace) -> int:
             texts.append(json.dumps(result.document, indent=1, ensure_ascii=False) + "\n")
     except (OSError, KeyError, TypeError, BlindRuleError, json.JSONDecodeError) as error:
         raise InputError(f"{type(error).__name__}: {error}") from error
-    written: list[Path] = []
     try:
-        for target, text in zip(outputs, texts, strict=True):
-            write_new(target, text)
-            written.append(target)
+        write_all_new(list(zip(outputs, texts, strict=True)))
     except FileExistsError as error:
-        for path in written:
-            path.unlink()
         print(f"refusing to overwrite {error.filename}", file=sys.stderr)
         return EXIT_EXISTS
+    except OSError as error:
+        print(f"could not write: {error}", file=sys.stderr)
+        return EXIT_WRITE
     picked = sorted((r for r in result.candidates if r.rank is not None), key=lambda r: r.rank or 0)
     print(
         f"focus-pick {levels['session']}: {len(result.candidates)} names, picked "

@@ -138,6 +138,11 @@ def test_flags_show_the_option_volume_default() -> None:
     assert pick(doc, []).candidates[0].flags == ("iv_row_missing", "option_volume_defaulted")
     assert pick(doc, [bad]).candidates[0].flags == ("iv_row_unusable", "option_volume_defaulted")
     assert pick(doc, [good]).candidates[0].flags == ()
+    for value in ("nan", "inf"):
+        assert pick(doc, [{**good, "call_vol": value}]).candidates[0].flags == (
+            "option_volume_capped",
+            "option_volume_not_finite",
+        )
 
 
 def test_context_hash_covers_other_names_and_built_from() -> None:

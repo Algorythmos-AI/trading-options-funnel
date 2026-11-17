@@ -90,7 +90,7 @@ def mutate_iv(rng: random.Random, built: str | None) -> list[dict[str, str]]:
     for _ in range(rng.randint(0, 8)):
         pool = [r for r in rows if r["session"] == built] or rows
         r = rng.choice(pool)
-        m = rng.randint(0, 4)
+        m = rng.randint(0, 5)
         if m == 0:
             r[rng.choice(["call_vol", "put_vol", "avg_call_vol", "avg_put_vol"])] = ""
         elif m == 1:
@@ -101,6 +101,8 @@ def mutate_iv(rng: random.Random, built: str | None) -> list[dict[str, str]]:
             rows.remove(r)
         elif m == 4:
             r["call_vol"] = rng.choice(["-5", "1e3", " 3 "])
+        elif m == 5:
+            r[rng.choice(["call_vol", "avg_put_vol"])] = rng.choice(["nan", "inf", "-inf"])
     return rows
 
 
@@ -123,9 +125,17 @@ def run_original(levels: dict[str, Any], rows: list[dict[str, str]]) -> tuple[st
         return ("ok", doc)
 
 
+# Messages of the port's deliberate refusals (see the focus_pick docstring): non-finite numbers.
+GUARD_MESSAGES = ("NaN or infinity", "finite number")
+
+
 def run_port(levels: dict[str, Any], rows: list[dict[str, str]]) -> tuple[str, Any]:
     try:
         return ("ok", json.loads(json.dumps(pick(levels, rows).document)))
+    except ValueError as error:
+        if any(m in str(error) for m in GUARD_MESSAGES):
+            return ("refused", str(error))
+        return ("raised", type(error).__name__)
     except Exception as error:  # noqa: BLE001
         return ("raised", type(error).__name__)
 
@@ -133,7 +143,35 @@ def run_port(levels: dict[str, Any], rows: list[dict[str, str]]) -> tuple[str, A
 @pytest.mark.parametrize("seed", range(4))
 def test_port_matches_the_original_on_mutated_nights(seed: int) -> None:
     rng = random.Random(seed)
+    refused = 0
     for _ in range(100):
         levels = mutate(rng, rng.choice(BASES))
         rows = mutate_iv(rng, levels.get("built_from"))
-        assert run_port(levels, rows) == run_original(levels, rows)
+        port, original = run_port(levels, rows), run_original(levels, rows)
+        if port[0] == "refused":
+            # Only where the original published a night with a non-finite number in it.
+            assert original[0] == "ok"
+            refused += 1
+            continue
+        assert port == original
+    assert refused < 50
+
+
+GUARDS = [
+    ("nan atr", lambda d, s: d["tickers"][s].update({"atr14": float("nan")})),
+    ("inf close", lambda d, s: d["tickers"][s]["last"].update({"close": float("inf")})),
+    ("nan elsewhere", lambda d, s: d["tickers"][s].update({"expected_move": float("nan")})),
+    ("odd symbol", lambda d, s: d["tickers"].update({"brk.b": d["tickers"].pop(s)})),
+    ("non-date session", lambda d, s: d.update({"session": "next"})),
+]
+
+
+@pytest.mark.parametrize(("name", "change"), GUARDS, ids=[g[0] for g in GUARDS])
+def test_guards_refuse_exactly_where_the_original_would_publish(name: str, change: Any) -> None:
+    levels = copy.deepcopy(BASES[-1])
+    change(levels, "AMD")
+    rows = [dict(r) for r in BASE_IV]
+    original = run_original(levels, rows)
+    assert original[0] == "ok", f"{name}: the original publishes this night"
+    with pytest.raises(ValueError):
+        pick(levels, rows)
