@@ -1,0 +1,146 @@
+{
+ "session": "2026-11-03",
+ "built_from": "2026-11-02",
+ "picked_at": "2026-11-02T21:55:04+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "NVDA",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close weak; option volume 1.1x normal.",
+   "close": 202.2,
+   "atr": 6.74,
+   "resistance": {
+    "price": 204.46,
+    "name": "MA200"
+   },
+   "support": {
+    "price": 200.91,
+    "name": "PML/PWL/PDL/WTDL"
+   },
+   "breakout_above": 204.46,
+   "hold_above": 200.91,
+   "target_up": {
+    "price": 209.98,
+    "name": "PDH/WTDH"
+   },
+   "target_down": null,
+   "score": 5.171,
+   "rank": 1
+  },
+  {
+   "symbol": "TSLA",
+   "bias": "support",
+   "why": "Closed 0.4 ATR above support; close mid; option volume 1.5x normal.",
+   "close": 403.83,
+   "atr": 15.09,
+   "resistance": {
+    "price": 410.85,
+    "name": "PMH/PWH"
+   },
+   "support": {
+    "price": 397.61,
+    "name": "PDL/WTDL"
+   },
+   "breakout_above": 410.85,
+   "hold_above": 397.61,
+   "target_up": {
+    "price": 498.83,
+    "name": "52WH"
+   },
+   "target_down": {
+    "price": 385.12,
+    "name": "MA200"
+   },
+   "score": 5.13,
+   "rank": 2
+  },
+  {
+   "symbol": "PLTR",
+   "bias": "range",
+   "why": "Closed 0.2 ATR under resistance; close weak; option volume 1.1x normal.",
+   "close": 178.52,
+   "atr": 9.52,
+   "resistance": {
+    "price": 180.81,
+    "name": "PML/PWL"
+   },
+   "support": {
+    "price": 153.57,
+    "name": "MA200"
+   },
+   "breakout_above": 180.81,
+   "hold_above": 153.57,
+   "target_up": {
+    "price": 186.88,
+    "name": "MA50/PDH/WTDH"
+   },
+   "target_down": {
+    "price": 126.97,
+    "name": "DEMAND"
+   },
+   "score": 5.074,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close weak; option volume 1.0x normal.",
+   "close": 752.14,
+   "atr": 8.97,
+   "resistance": {
+    "price": 763.86,
+    "name": "PDH/WTDH"
+   },
+   "support": {
+    "price": 750.36,
+    "name": "PML/PWL/PDL/WTDL"
+   },
+   "breakout_above": 763.86,
+   "hold_above": 750.36,
+   "target_up": {
+    "price": 769.33,
+    "name": "MA20"
+   },
+   "target_down": {
+    "price": 738.38,
+    "name": "DEMAND"
+   },
+   "score": 4.177,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-11-03T13:52:42+00:00",
+  "items": [
+   {
+    "symbol": "NVDA",
+    "price": 207.58,
+    "gap_pct": 2.66,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "TSLA",
+    "price": 407.8,
+    "gap_pct": 0.98,
+    "where": "near_resistance",
+    "note": "Right under the level: let it break and retest first."
+   },
+   {
+    "symbol": "PLTR",
+    "price": 168.0,
+    "gap_pct": -5.89,
+    "where": "between",
+    "note": "Between the levels: no edge in the middle, wait for price to reach one."
+   },
+   {
+    "symbol": "SPY",
+    "price": 753.67,
+    "gap_pct": 0.2,
+    "where": "between",
+    "note": "Between the levels: no edge in the middle, wait for price to reach one."
+   }
+  ]
+ }
+}

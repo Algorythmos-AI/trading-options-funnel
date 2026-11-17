@@ -1,0 +1,149 @@
+{
+ "session": "2026-10-28",
+ "built_from": "2026-10-27",
+ "picked_at": "2026-10-27T21:55:23+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "AVGO",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close mid; option volume 0.8x normal.",
+   "close": 342.33,
+   "atr": 11.84,
+   "resistance": {
+    "price": 345.67,
+    "name": "PDH/WTDH/MA20"
+   },
+   "support": {
+    "price": 341.1,
+    "name": "PWH"
+   },
+   "breakout_above": 345.67,
+   "hold_above": 341.1,
+   "target_up": {
+    "price": 354.48,
+    "name": "MA50"
+   },
+   "target_down": {
+    "price": 323.25,
+    "name": "WTDL"
+   },
+   "score": 5.093,
+   "rank": 1
+  },
+  {
+   "symbol": "AMD",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close strong; option volume 0.5x normal.",
+   "close": 560.26,
+   "atr": 29.66,
+   "resistance": {
+    "price": 563.92,
+    "name": "PDH/WTDH"
+   },
+   "support": {
+    "price": 556.79,
+    "name": "PWH"
+   },
+   "breakout_above": 563.92,
+   "hold_above": 556.79,
+   "target_up": {
+    "price": 581.03,
+    "name": "MA20"
+   },
+   "target_down": {
+    "price": 538.5,
+    "name": "PDL"
+   },
+   "score": 4.802,
+   "rank": 2
+  },
+  {
+   "symbol": "NVDA",
+   "bias": "breakout",
+   "why": "Closed 0.2 ATR under resistance; close mid; option volume 0.5x normal.",
+   "close": 217.94,
+   "atr": 6.2,
+   "resistance": {
+    "price": 219.19,
+    "name": "PDH/WTDH"
+   },
+   "support": {
+    "price": 215.53,
+    "name": "PDL"
+   },
+   "breakout_above": 219.19,
+   "hold_above": 215.53,
+   "target_up": {
+    "price": 224.44,
+    "name": "MA20"
+   },
+   "target_down": {
+    "price": 210.18,
+    "name": "PWL"
+   },
+   "score": 4.497,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "breakout",
+   "why": "Closed 0.1 ATR under resistance; close strong; option volume 0.8x normal.",
+   "close": 769.66,
+   "atr": 7.28,
+   "resistance": {
+    "price": 770.41,
+    "name": "MA20/PDH/WTDH"
+   },
+   "support": {
+    "price": 767.53,
+    "name": "MA50"
+   },
+   "breakout_above": 770.41,
+   "hold_above": 767.53,
+   "target_up": {
+    "price": 774.44,
+    "name": "PWH/PMH"
+   },
+   "target_down": {
+    "price": 761.63,
+    "name": "WTDL"
+   },
+   "score": 4.054,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-10-28T12:54:39+00:00",
+  "items": [
+   {
+    "symbol": "AVGO",
+    "price": 347.45,
+    "gap_pct": 1.5,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "AMD",
+    "price": 569.0,
+    "gap_pct": 1.56,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "NVDA",
+    "price": 219.44,
+    "gap_pct": 0.69,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "SPY",
+    "price": 771.3,
+    "gap_pct": 0.21,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   }
+  ]
+ }
+}

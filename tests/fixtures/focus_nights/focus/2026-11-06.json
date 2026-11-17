@@ -1,0 +1,140 @@
+{
+ "session": "2026-11-06",
+ "built_from": "2026-11-05",
+ "picked_at": "2026-11-05T21:54:56+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "PLTR",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close weak; option volume 1.1x normal.",
+   "close": 154.91,
+   "atr": 10.09,
+   "resistance": {
+    "price": 167.01,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 152.67,
+    "name": "PDL/WTDL/MA200"
+   },
+   "breakout_above": 167.01,
+   "hold_above": 152.67,
+   "target_up": {
+    "price": 180.81,
+    "name": "PML/PWL"
+   },
+   "target_down": {
+    "price": 126.97,
+    "name": "DEMAND"
+   },
+   "score": 5.192,
+   "rank": 1
+  },
+  {
+   "symbol": "AAPL",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close weak; option volume 1.0x normal.",
+   "close": 344.28,
+   "atr": 8.9,
+   "resistance": {
+    "price": 351.43,
+    "name": "PWH/PMH"
+   },
+   "support": {
+    "price": 343.1,
+    "name": "MA20"
+   },
+   "breakout_above": 351.43,
+   "hold_above": 343.1,
+   "target_up": null,
+   "target_down": {
+    "price": 334.35,
+    "name": "PWL/MA50"
+   },
+   "score": 4.996,
+   "rank": 2
+  },
+  {
+   "symbol": "TSLA",
+   "bias": "support",
+   "why": "Closed 0.2 ATR under resistance; close weak; option volume 0.9x normal.",
+   "close": 343.44,
+   "atr": 17.62,
+   "resistance": {
+    "price": 347.5,
+    "name": "DEMAND/PML"
+   },
+   "support": {
+    "price": 338.17,
+    "name": "PDL/WTDL"
+   },
+   "breakout_above": 347.5,
+   "hold_above": 338.17,
+   "target_up": {
+    "price": 372.06,
+    "name": "MA50/PDH"
+   },
+   "target_down": null,
+   "score": 4.912,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "support",
+   "why": "Closed 0.3 ATR above support; close weak; option volume 1.5x normal.",
+   "close": 733.15,
+   "atr": 10.97,
+   "resistance": {
+    "price": 738.38,
+    "name": "DEMAND"
+   },
+   "support": {
+    "price": 730.15,
+    "name": "MA200"
+   },
+   "breakout_above": 738.38,
+   "hold_above": 730.15,
+   "target_up": {
+    "price": 750.36,
+    "name": "PML/PWL"
+   },
+   "target_down": null,
+   "score": 4.678,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-11-06T13:53:01+00:00",
+  "items": [
+   {
+    "symbol": "PLTR",
+    "price": 157.94,
+    "gap_pct": 1.96,
+    "where": "between",
+    "note": "Between the levels: no edge in the middle, wait for price to reach one."
+   },
+   {
+    "symbol": "AAPL",
+    "price": 340.62,
+    "gap_pct": -1.06,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   },
+   {
+    "symbol": "TSLA",
+    "price": 352.61,
+    "gap_pct": 2.67,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "SPY",
+    "price": 735.54,
+    "gap_pct": 0.33,
+    "where": "near_resistance",
+    "note": "Right under the level: let it break and retest first."
+   }
+  ]
+ }
+}

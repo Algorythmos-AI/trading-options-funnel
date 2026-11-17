@@ -1,0 +1,146 @@
+{
+ "session": "2026-10-30",
+ "built_from": "2026-10-29",
+ "picked_at": "2026-10-29T21:55:11+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "GOOGL",
+   "bias": "support",
+   "why": "Closed 0.3 ATR above support; close mid; option volume 2.6x normal.",
+   "close": 283.82,
+   "atr": 10.78,
+   "resistance": {
+    "price": 288.33,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 280.36,
+    "name": "PDL/WTDL"
+   },
+   "breakout_above": 288.33,
+   "hold_above": 280.36,
+   "target_up": {
+    "price": 320.18,
+    "name": "PWL"
+   },
+   "target_down": null,
+   "score": 5.858,
+   "rank": 1
+  },
+  {
+   "symbol": "PLTR",
+   "bias": "breakout",
+   "why": "Closed 0.1 ATR under resistance; close strong; option volume 0.5x normal.",
+   "close": 196.42,
+   "atr": 8.57,
+   "resistance": {
+    "price": 197.48,
+    "name": "MA20/PDH"
+   },
+   "support": {
+    "price": 194.68,
+    "name": "PMH"
+   },
+   "breakout_above": 197.48,
+   "hold_above": 194.68,
+   "target_up": {
+    "price": 201.83,
+    "name": "WTDH/PWH"
+   },
+   "target_down": {
+    "price": 190.36,
+    "name": "PDL/WTDL"
+   },
+   "score": 4.749,
+   "rank": 2
+  },
+  {
+   "symbol": "META",
+   "bias": "breakout",
+   "why": "Closed 0.3 ATR under resistance; close mid; option volume 0.7x normal.",
+   "close": 624.52,
+   "atr": 26.29,
+   "resistance": {
+    "price": 632.11,
+    "name": "MA200/PWL/PDH"
+   },
+   "support": {
+    "price": 616.8,
+    "name": "PDL"
+   },
+   "breakout_above": 632.11,
+   "hold_above": 616.8,
+   "target_up": {
+    "price": 647.69,
+    "name": "WTDH"
+   },
+   "target_down": {
+    "price": 578.68,
+    "name": "DEMAND"
+   },
+   "score": 4.664,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "breakout",
+   "why": "Closed 0.2 ATR under resistance; close mid; option volume 0.7x normal.",
+   "close": 769.36,
+   "atr": 7.11,
+   "resistance": {
+    "price": 770.76,
+    "name": "PDH/MA20"
+   },
+   "support": {
+    "price": 766.62,
+    "name": "PDL/MA50"
+   },
+   "breakout_above": 770.76,
+   "hold_above": 766.62,
+   "target_up": {
+    "price": 774.44,
+    "name": "PWH/PMH"
+   },
+   "target_down": {
+    "price": 761.63,
+    "name": "WTDL"
+   },
+   "score": 3.752,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-10-30T12:53:19+00:00",
+  "items": [
+   {
+    "symbol": "GOOGL",
+    "price": 280.39,
+    "gap_pct": -1.21,
+    "where": "near_support",
+    "note": "Sitting on support: a call only if it holds and bounces; a break is a warning."
+   },
+   {
+    "symbol": "PLTR",
+    "price": 193.45,
+    "gap_pct": -1.51,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   },
+   {
+    "symbol": "META",
+    "price": 613.35,
+    "gap_pct": -1.79,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   },
+   {
+    "symbol": "SPY",
+    "price": 761.42,
+    "gap_pct": -1.03,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   }
+  ]
+ }
+}
