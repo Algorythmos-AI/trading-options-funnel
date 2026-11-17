@@ -8,13 +8,16 @@
   [--correction]`: seal one radar edition as sent; the session defaults to the file's date.
 - `verify FOLDER...`: check sealed folders against their manifests.
 - `replay-focus FOLDER...`: run the port on sealed inputs and compare with the sealed focus file.
+- `funnel-health --root R --session S [--out F] [--send] [--base URL]`: build the dashboard's health document for a
+  session from the sealed evidence; print it, write it, or send it to the signed ingest.
 
 All checks run before anything is written. Each file is written to a temporary file, flushed to disk, then linked
 into place, which fails if the target exists: a run never overwrites, and never leaves a partial file.
 
 Exit codes: 0 done; 1 an output already exists; 3 bad input (missing file, bad CSV header, a name the record
 cannot describe); 4 an output could not be written (missing folder, no permission, disk); 5 a sealed folder does
-not verify or does not replay; 6 the session is already sealed with different bytes (a change needs --correction).
+not verify or does not replay; 6 the session is already sealed with different bytes (a change needs --correction);
+7 the health document could not be sent or was refused.
 Sealing the same bytes again exits 0 and says "already sealed, identical". On any failure after writing has
 started, every output this run created is removed.
 """
@@ -35,6 +38,8 @@ from pathlib import Path
 from options_funnel.blind import BlindRuleError, assert_blind
 from options_funnel.candidates import dump_jsonl
 from options_funnel.focus_pick import pick
+from options_funnel.health import build as build_health
+from options_funnel.publish import DEFAULT_BASE, PublishError, send
 from options_funnel.replay import replay_focus
 from options_funnel.seal import AlreadySealedDifferent, SealError, check_session, iv_rows_for, seal, sha256, verify
 
@@ -44,6 +49,7 @@ EXIT_INPUT = 3
 EXIT_WRITE = 4
 EXIT_MISMATCH = 5
 EXIT_SEALED_DIFFERENT = 6
+EXIT_SEND = 7
 
 
 class InputError(ValueError):
@@ -254,6 +260,33 @@ def replay_cmd(args: argparse.Namespace) -> int:
     return status
 
 
+def health_cmd(args: argparse.Namespace) -> int:
+    try:
+        doc = build_health(args.root, args.session, _now(), code_commit())
+    except (OSError, KeyError, TypeError, SealError, json.JSONDecodeError) as error:
+        raise InputError(f"{type(error).__name__}: {error}") from error
+    text = json.dumps(doc, indent=1, ensure_ascii=False) + "\n"
+    if args.out:
+        try:
+            write_all_new([(args.out, text)])
+        except FileExistsError:
+            print(f"refusing to overwrite {args.out}", file=sys.stderr)
+            return EXIT_EXISTS
+        except OSError as error:
+            print(f"could not write: {error}", file=sys.stderr)
+            return EXIT_WRITE
+    if args.send:
+        try:
+            sent = send(doc, args.base)
+        except PublishError as error:
+            print(f"not sent: {error}", file=sys.stderr)
+            return EXIT_SEND
+        print(f"sent {doc['run_id']}: HTTP {sent.status} {sent.outcome}")
+    elif not args.out:
+        print(text, end="")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="options_funnel.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -286,6 +319,13 @@ def main(argv: list[str] | None = None) -> int:
     rp = sub.add_parser("replay-focus", help="re-run the port on sealed nights and compare")
     rp.add_argument("folders", type=Path, nargs="+")
     rp.set_defaults(run=replay_cmd)
+    fh = sub.add_parser("funnel-health", help="build (and send) the dashboard's health document for a session")
+    fh.add_argument("--root", type=Path, required=True)
+    fh.add_argument("--session", required=True)
+    fh.add_argument("--out", type=Path)
+    fh.add_argument("--send", action="store_true")
+    fh.add_argument("--base", default=DEFAULT_BASE)
+    fh.set_defaults(run=health_cmd)
     args = parser.parse_args(argv)
     try:
         result: int = args.run(args)

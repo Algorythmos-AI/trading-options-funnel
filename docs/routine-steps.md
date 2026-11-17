@@ -29,7 +29,8 @@ block to the focus file: the seal refuses a focus file that already has it.
 >    On exit 6 do not correct anything: report it.
 > 4. Check: `PYTHONPATH=src python3 -m options_funnel.cli replay-focus /tmp/funnel-data/data/focus/<next session>`. Note its exit code.
 > 5. Commit and push, only if step 3 printed "sealed": `cd /tmp/funnel-data && git add data/focus && git -c user.name=skalaliya -c user.email=skalaliya@gmail.com commit -q -m "seal focus <next session>"`, then try `git push -q origin data` up to three times, running `git pull -q --rebase origin data` before each retry.
-> 6. Reply in the thread with one line: "Seal <next session>: seal exit N, replay exit N, pushed yes/no", plus which part was blocked if any. Replay exit 5 means the repository's port and tonight's pick disagree: say so; change nothing.
+> 6. Health: `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli funnel-health --root /tmp/funnel-data --session <next session> --send`. It reads `RADAR_INGEST_SECRET` and `VERCEL_AUTOMATION_BYPASS_SECRET` from the environment and never prints them. Exit 7 with "does not accept" means the dashboard release that knows `stocksdelta/funnel` is not live yet: say so once, do not retry.
+> 7. Reply in the thread with one line: "Seal <next session>: seal exit N, replay exit N, pushed yes/no, health exit N", plus which part was blocked if any. Replay exit 5 means the repository's port and tonight's pick disagree: say so; change nothing.
 
 ## Radar edition to dashboard (`trig_01B1TN3d4x7dZ3Wxad2LmYgb`)
 
