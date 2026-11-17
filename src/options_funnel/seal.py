@@ -9,7 +9,10 @@ Kinds:
 - `focus`: the after-close picker's inputs and output: `levels.json` (as built), `iv_rows.csv` (the header and the
   rows of iv_history.csv for the levels file's `built_from` session, line bytes unchanged, BOM kept), `focus.json`
   (the focus file as `focus.py pick` wrote it, before the pre-open pass adds `premarket`).
-- `radar`: `edition.json`, the radar edition exactly as sent to the dashboard.
+- `radar`: `edition.json`, the radar edition exactly as sent to the dashboard, with that morning's Nasdaq Trader
+  symbol directory (`nasdaqlisted.txt`, `otherlisted.txt`) and, in the provenance, the Radar skill bundle's sha256.
+- `radar-receipts`: `listing.json`, the dashboard's listing of the radar edition copies for the date (store path,
+  receipt time, run, sha256s), as served, sealed after the open (trading-lab-research DEC-0055 section 1).
 
 Writing: the session folder is created exclusively (`mkdir` fails if it exists), the files go in, the manifest
 last, everything is flushed to disk, then the folder is verified; on any failure the new folder is removed.
@@ -40,7 +43,8 @@ SCHEMA_VERSION = 1
 MAX_CORRECTION = 99
 KINDS: dict[str, frozenset[str]] = {
     "focus": frozenset({"levels.json", "iv_rows.csv", "focus.json"}),
-    "radar": frozenset({"edition.json"}),
+    "radar": frozenset({"edition.json", "nasdaqlisted.txt", "otherlisted.txt"}),
+    "radar-receipts": frozenset({"listing.json"}),
 }
 _FOLDER = re.compile(r"(\d{4}-\d{2}-\d{2})(?:\.r([2-9]|[1-9]\d))?")
 _BOM = b"\xef\xbb\xbf"

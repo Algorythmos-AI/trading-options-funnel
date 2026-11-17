@@ -30,7 +30,8 @@ block to the focus file: the seal refuses a focus file that already has it.
 > 4. Check: `PYTHONPATH=src python3 -m options_funnel.cli replay-focus /tmp/funnel-data/data/focus/<next session>`. Note its exit code.
 > 5. Commit and push, only if step 3 printed "sealed": `cd /tmp/funnel-data && git add data/focus && git -c user.name=skalaliya -c user.email=skalaliya@gmail.com commit -q -m "seal focus <next session>"`, then try `git push -q origin data` up to three times, running `git pull -q --rebase origin data` before each retry.
 > 6. Health: `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli funnel-health --root /tmp/funnel-data --session <next session> --send`. It reads `RADAR_INGEST_SECRET` and `VERCEL_AUTOMATION_BYPASS_SECRET` from the environment and never prints them. Exit 7 with "does not accept" means the dashboard release that knows `stocksdelta/funnel` is not live yet: say so once, do not retry.
-> 7. Reply in the thread with one line: "Seal <next session>: seal exit N, replay exit N, pushed yes/no, health exit N", plus which part was blocked if any. Replay exit 5 means the repository's port and tonight's pick disagree: say so; change nothing.
+> 7. Radar receipts (trading-lab-research DEC-0055 section 1), for the session that just closed: `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli seal-receipts --root /tmp/funnel-data --routine trig_01EUa31y41kKS4WuJqBXJwWN --date <the session that just closed>`, then commit and push `data/radar-receipts` as in step 5, message "seal radar receipts <date>". It reads the same two secrets. Exit 7 means the dashboard refused or does not have the listing route yet: say so once, do not retry. Run it every regular session, whatever the other steps did: a missing day is a session DEC-0055 cannot count.
+> 8. Reply in the thread with one line: "Seal <next session>: seal exit N, replay exit N, pushed yes/no, health exit N, receipts exit N", plus which part was blocked if any. Replay exit 5 means the repository's port and tonight's pick disagree: say so; change nothing.
 
 ## Radar edition to dashboard (`trig_01B1TN3d4x7dZ3Wxad2LmYgb`)
 
@@ -38,7 +39,8 @@ Append at the end:
 
 > SEAL STEP (added <date>; trading-options-funnel plan step S3). Only when send_outbox.py reported HTTP 200 for
 > the file it sent. Same limits and steps 0–2 as the options seal step.
-> 3. `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli seal-radar --root /tmp/funnel-data --routine trig_01B1TN3d4x7dZ3Wxad2LmYgb --edition /mnt/project-files/radar-dashboard/outbox/<the file's date>.json --http-status 200 --sent-at <the send time, UTC ISO>`.
+> 3. `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli seal-radar --root /tmp/funnel-data --routine trig_01B1TN3d4x7dZ3Wxad2LmYgb --edition /mnt/project-files/radar-dashboard/outbox/<the file's date>.json --skill /mnt/project-files/skills/pre-market-radar.skill --fetch-directory --http-status 200 --sent-at <the send time, UTC ISO>`.
+>    It also downloads that morning's Nasdaq Trader symbol directory (nasdaqlisted.txt, otherlisted.txt) and records the skill bundle's sha256; both are needed by DEC-0055. This step must finish before 09:30 New York.
 >    The session is the date in the file's name. A same-day re-send of a changed edition exits 6: then run the same
 >    command with `--correction`, which seals it beside the first, never over it.
 > 4. Commit and push as in the options step, message "seal radar <date>".

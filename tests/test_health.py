@@ -34,7 +34,9 @@ def seal_night(root: Path, session: str = SESSION) -> None:
 def seal_radar(root: Path, date: str, lists: list[dict[str, Any]]) -> None:
     edition = root / f"{date}.json"
     edition.write_text(json.dumps({"schema": "stocksdelta/radar", "lists": lists}))
-    assert main(["seal-radar", "--root", str(root), "--edition", str(edition)]) == 0
+    directory = HERE / "fixtures" / "directory"
+    args = ["seal-radar", "--root", str(root), "--edition", str(edition), "--skill", str(directory / "skill.bin")]
+    assert main([*args, "--directory", str(directory)]) == 0
 
 
 def test_the_contract_copy_is_the_pinned_one() -> None:
