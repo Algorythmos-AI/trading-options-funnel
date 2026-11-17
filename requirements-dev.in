@@ -1,0 +1,5 @@
+# Dev and check tools. Compile with:
+#   uv pip compile --python-version 3.12 --generate-hashes requirements-dev.in -o requirements-dev.lock.txt
+pytest==8.4.2
+ruff==0.14.3
+mypy==1.18.2
