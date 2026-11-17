@@ -100,6 +100,19 @@ def test_the_scored_edition_is_the_first_in_the_span() -> None:
     assert x.scored_receipt([receipt("2026-11-18T14:30:00+00:00")], PREV_CLOSE, "2026-11-18")[1] == "received_late"
 
 
+def test_a_lost_edition_keeps_its_place_in_receipt_order() -> None:
+    lost = x.Receipt(
+        "radar/copies/2026-11-18/r.lost.json",
+        datetime.fromisoformat("2026-11-18T11:00:00+00:00"),
+        "gone",
+        None,
+        None,
+        True,
+    )
+    chosen, reason = x.scored_receipt([receipt("2026-11-18T11:12:00+00:00", "kept"), lost], PREV_CLOSE, "2026-11-18")
+    assert chosen is lost and reason == "ok"
+
+
 def test_the_daily_counting_rule() -> None:
     ok = [receipt("2026-11-18T11:12:00+00:00")]
     assert x.counted_status(True, ok, True, PREV_CLOSE, "2026-11-18") == (True, "counted")

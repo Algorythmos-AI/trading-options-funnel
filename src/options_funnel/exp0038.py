@@ -130,11 +130,18 @@ def scored_names(
 
 @dataclass(frozen=True)
 class Receipt:
+    """One row of the sealed receipt listing.
+
+    A lost row (an edition replaced before its copy was made) has no hashes. It still takes its place in receipt
+    order, and if it is the scored edition the session is content_lost at the read.
+    """
+
     path: str
     received_at: datetime
     run_id: str
-    copy_sha256: str
-    edition_sha256: str
+    copy_sha256: str | None
+    edition_sha256: str | None
+    lost: bool = False
 
 
 def scored_receipt(receipts: Sequence[Receipt], previous_close: datetime, session: str) -> tuple[Receipt | None, str]:
