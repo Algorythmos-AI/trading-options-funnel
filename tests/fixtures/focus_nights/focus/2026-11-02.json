@@ -1,0 +1,143 @@
+{
+ "session": "2026-11-02",
+ "built_from": "2026-10-30",
+ "picked_at": "2026-10-30T21:54:26+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "AMZN",
+   "bias": "breakout",
+   "why": "Closed 0.2 ATR under resistance; close strong; option volume 1.8x normal.",
+   "close": 240.35,
+   "atr": 7.71,
+   "resistance": {
+    "price": 241.55,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 229.36,
+    "name": "PDL/PML/PWL"
+   },
+   "breakout_above": 241.55,
+   "hold_above": 229.36,
+   "target_up": {
+    "price": 249.14,
+    "name": "DEMAND"
+   },
+   "target_down": null,
+   "score": 6.002,
+   "rank": 1
+  },
+  {
+   "symbol": "GOOGL",
+   "bias": "support",
+   "why": "Closed 0.3 ATR above support; close mid; option volume 1.6x normal.",
+   "close": 279.84,
+   "atr": 10.84,
+   "resistance": {
+    "price": 283.14,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 276.92,
+    "name": "PDL/PML/PWL"
+   },
+   "breakout_above": 283.14,
+   "hold_above": 276.92,
+   "target_up": {
+    "price": 326.41,
+    "name": "PWH"
+   },
+   "target_down": null,
+   "score": 5.542,
+   "rank": 2
+  },
+  {
+   "symbol": "TSLA",
+   "bias": "breakout",
+   "why": "Closed 0.3 ATR under resistance; close mid; option volume 1.4x normal.",
+   "close": 399.81,
+   "atr": 14.38,
+   "resistance": {
+    "price": 404.22,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 387.52,
+    "name": "PDL"
+   },
+   "breakout_above": 404.22,
+   "hold_above": 387.52,
+   "target_up": {
+    "price": 417.16,
+    "name": "SUPPLY/SUPPLY"
+   },
+   "target_down": {
+    "price": 369.6,
+    "name": "MA50"
+   },
+   "score": 5.237,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "support",
+   "why": "Closed 0.6 ATR above support; close mid; option volume 1.0x normal.",
+   "close": 755.72,
+   "atr": 8.3,
+   "resistance": {
+    "price": 761.46,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 750.36,
+    "name": "PDL/PML/PWL"
+   },
+   "breakout_above": 761.46,
+   "hold_above": 750.36,
+   "target_up": {
+    "price": 767.49,
+    "name": "MA50"
+   },
+   "target_down": {
+    "price": 738.38,
+    "name": "DEMAND"
+   },
+   "score": 3.232,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-11-02T14:26:25+00:00",
+  "items": [
+   {
+    "symbol": "AMZN",
+    "price": 243.4,
+    "gap_pct": 1.27,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "GOOGL",
+    "price": 284.15,
+    "gap_pct": 1.54,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "TSLA",
+    "price": 404.53,
+    "gap_pct": 1.18,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "SPY",
+    "price": 759.98,
+    "gap_pct": 0.56,
+    "where": "near_resistance",
+    "note": "Right under the level: let it break and retest first."
+   }
+  ]
+ }
+}

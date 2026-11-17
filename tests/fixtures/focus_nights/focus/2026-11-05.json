@@ -1,0 +1,149 @@
+{
+ "session": "2026-11-05",
+ "built_from": "2026-11-04",
+ "picked_at": "2026-11-04T21:54:58+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "AMD",
+   "bias": "breakout",
+   "why": "Closed 0.1 ATR under resistance; close mid; option volume 1.2x normal.",
+   "close": 488.87,
+   "atr": 32.22,
+   "resistance": {
+    "price": 492.21,
+    "name": "PML/PWL"
+   },
+   "support": {
+    "price": 476.6,
+    "name": "PDL"
+   },
+   "breakout_above": 492.21,
+   "hold_above": 476.6,
+   "target_up": {
+    "price": 514.53,
+    "name": "PDH/WTDH"
+   },
+   "target_down": {
+    "price": 414.23,
+    "name": "MA200"
+   },
+   "score": 5.533,
+   "rank": 1
+  },
+  {
+   "symbol": "AMZN",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close mid; option volume 1.3x normal.",
+   "close": 266.05,
+   "atr": 9.34,
+   "resistance": {
+    "price": 271.48,
+    "name": "PDH/WTDH"
+   },
+   "support": {
+    "price": 263.85,
+    "name": "PDL"
+   },
+   "breakout_above": 271.48,
+   "hold_above": 263.85,
+   "target_up": {
+    "price": 287.2,
+    "name": "52WH"
+   },
+   "target_down": {
+    "price": 255.36,
+    "name": "PWH"
+   },
+   "score": 5.344,
+   "rank": 2
+  },
+  {
+   "symbol": "TSLA",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close mid; option volume 1.1x normal.",
+   "close": 385.29,
+   "atr": 15.77,
+   "resistance": {
+    "price": 392.04,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 383.22,
+    "name": "MA20/PWL/MA200"
+   },
+   "breakout_above": 392.04,
+   "hold_above": 383.22,
+   "target_up": {
+    "price": 410.85,
+    "name": "PMH/PWH"
+   },
+   "target_down": {
+    "price": 372.11,
+    "name": "MA50"
+   },
+   "score": 5.324,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "breakout",
+   "why": "Closed 0.3 ATR under resistance; close mid; option volume 1.0x normal.",
+   "close": 766.72,
+   "atr": 8.98,
+   "resistance": {
+    "price": 769.23,
+    "name": "PDH/WTDH"
+   },
+   "support": {
+    "price": 762.65,
+    "name": "PDL"
+   },
+   "breakout_above": 769.23,
+   "hold_above": 762.65,
+   "target_up": {
+    "price": 781.62,
+    "name": "52WH/PMH"
+   },
+   "target_down": {
+    "price": 750.36,
+    "name": "PML/PWL/WTDL"
+   },
+   "score": 4.027,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-11-05T13:52:38+00:00",
+  "items": [
+   {
+    "symbol": "AMD",
+    "price": 462.2,
+    "gap_pct": -5.46,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   },
+   {
+    "symbol": "AMZN",
+    "price": 271.13,
+    "gap_pct": 1.91,
+    "where": "near_resistance",
+    "note": "Right under the level: let it break and retest first."
+   },
+   {
+    "symbol": "TSLA",
+    "price": 376.25,
+    "gap_pct": -2.35,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   },
+   {
+    "symbol": "SPY",
+    "price": 767.28,
+    "gap_pct": 0.07,
+    "where": "near_resistance",
+    "note": "Right under the level: let it break and retest first."
+   }
+  ]
+ }
+}

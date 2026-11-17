@@ -1,0 +1,146 @@
+{
+ "session": "2026-11-11",
+ "built_from": "2026-11-10",
+ "picked_at": "2026-11-10T21:54:54+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "NVDA",
+   "bias": "support",
+   "why": "Closed 0.3 ATR above support; close mid; option volume 1.6x normal.",
+   "close": 168.8,
+   "atr": 9.29,
+   "resistance": {
+    "price": 174.67,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 165.89,
+    "name": "PDL/WTDL"
+   },
+   "breakout_above": 174.67,
+   "hold_above": 165.89,
+   "target_up": {
+    "price": 179.92,
+    "name": "WTDH"
+   },
+   "target_down": null,
+   "score": 5.453,
+   "rank": 1
+  },
+  {
+   "symbol": "AVGO",
+   "bias": "breakout",
+   "why": "Closed 0.1 ATR under resistance; close strong; option volume 0.8x normal.",
+   "close": 332.11,
+   "atr": 17.29,
+   "resistance": {
+    "price": 334.65,
+    "name": "PDH/WTDH/PWH"
+   },
+   "support": {
+    "price": 329.1,
+    "name": "MA20"
+   },
+   "breakout_above": 334.65,
+   "hold_above": 329.1,
+   "target_up": {
+    "price": 346.13,
+    "name": "MA50"
+   },
+   "target_down": {
+    "price": 319.3,
+    "name": "PML/SUPPLY"
+   },
+   "score": 5.035,
+   "rank": 2
+  },
+  {
+   "symbol": "MSFT",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close mid; option volume 0.6x normal.",
+   "close": 533.38,
+   "atr": 17.3,
+   "resistance": {
+    "price": 542.3,
+    "name": "SUPPLY/PDH"
+   },
+   "support": {
+    "price": 531.11,
+    "name": "MA20"
+   },
+   "breakout_above": 542.3,
+   "hold_above": 531.11,
+   "target_up": {
+    "price": 551.15,
+    "name": "PMH"
+   },
+   "target_down": {
+    "price": 517.8,
+    "name": "MA50"
+   },
+   "score": 4.794,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "support",
+   "why": "Closed 0.4 ATR above support; close mid; option volume 0.9x normal.",
+   "close": 749.97,
+   "atr": 12.11,
+   "resistance": {
+    "price": 755.42,
+    "name": "WTDH"
+   },
+   "support": {
+    "price": 744.89,
+    "name": "PDL"
+   },
+   "breakout_above": 755.42,
+   "hold_above": 744.89,
+   "target_up": {
+    "price": 762.64,
+    "name": "SUPPLY"
+   },
+   "target_down": {
+    "price": 738.38,
+    "name": "DEMAND"
+   },
+   "score": 3.873,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-11-11T13:51:47+00:00",
+  "items": [
+   {
+    "symbol": "NVDA",
+    "price": 174.61,
+    "gap_pct": 3.44,
+    "where": "near_resistance",
+    "note": "Right under the level: let it break and retest first."
+   },
+   {
+    "symbol": "AVGO",
+    "price": 345.5,
+    "gap_pct": 4.03,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "MSFT",
+    "price": 536.53,
+    "gap_pct": 0.59,
+    "where": "between",
+    "note": "Between the levels: no edge in the middle, wait for price to reach one."
+   },
+   {
+    "symbol": "SPY",
+    "price": 757.05,
+    "gap_pct": 0.94,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   }
+  ]
+ }
+}

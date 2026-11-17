@@ -1,0 +1,140 @@
+{
+ "session": "2026-11-09",
+ "built_from": "2026-11-06",
+ "picked_at": "2026-11-06T21:54:44+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "NVDA",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close weak; option volume 1.3x normal.",
+   "close": 186.69,
+   "atr": 8.02,
+   "resistance": {
+    "price": 194.89,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 185.22,
+    "name": "PDL"
+   },
+   "breakout_above": 194.89,
+   "hold_above": 185.22,
+   "target_up": {
+    "price": 199.68,
+    "name": "SUPPLY"
+   },
+   "target_down": null,
+   "score": 5.47,
+   "rank": 1
+  },
+  {
+   "symbol": "AVGO",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close weak; option volume 1.1x normal.",
+   "close": 293.34,
+   "atr": 15.12,
+   "resistance": {
+    "price": 311.35,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 289.78,
+    "name": "PDL/PWL"
+   },
+   "breakout_above": 311.35,
+   "hold_above": 289.78,
+   "target_up": {
+    "price": 319.3,
+    "name": "PML"
+   },
+   "target_down": null,
+   "score": 5.091,
+   "rank": 2
+  },
+  {
+   "symbol": "AMD",
+   "bias": "breakout",
+   "why": "Closed 0.3 ATR under resistance; close mid; option volume 1.1x normal.",
+   "close": 449.03,
+   "atr": 38.02,
+   "resistance": {
+    "price": 459.74,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 433.41,
+    "name": "PDL"
+   },
+   "breakout_above": 459.74,
+   "hold_above": 433.41,
+   "target_up": {
+    "price": 492.21,
+    "name": "PML"
+   },
+   "target_down": {
+    "price": 402.1,
+    "name": "PWL"
+   },
+   "score": 5.029,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "support",
+   "why": "Closed 0.2 ATR above support; close weak; option volume 0.9x normal.",
+   "close": 735.39,
+   "atr": 11.12,
+   "resistance": {
+    "price": 738.38,
+    "name": "DEMAND"
+   },
+   "support": {
+    "price": 732.71,
+    "name": "PWL"
+   },
+   "breakout_above": 738.38,
+   "hold_above": 732.71,
+   "target_up": {
+    "price": 750.36,
+    "name": "PML"
+   },
+   "target_down": null,
+   "score": 4.169,
+   "rank": 4
+  }
+ ],
+ "premarket": {
+  "as_of": "2026-11-09T13:52:51+00:00",
+  "items": [
+   {
+    "symbol": "NVDA",
+    "price": 176.49,
+    "gap_pct": -5.46,
+    "where": "below_support",
+    "note": "Gapping under support: no call; a put only after a failed retest from below."
+   },
+   {
+    "symbol": "AVGO",
+    "price": 302.89,
+    "gap_pct": 3.26,
+    "where": "between",
+    "note": "Between the levels: no edge in the middle, wait for price to reach one."
+   },
+   {
+    "symbol": "AMD",
+    "price": 466.9,
+    "gap_pct": 3.98,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   },
+   {
+    "symbol": "SPY",
+    "price": 742.54,
+    "gap_pct": 0.97,
+    "where": "above_resistance",
+    "note": "Gapping over the level: wait for a retest that holds before any call."
+   }
+  ]
+ }
+}
