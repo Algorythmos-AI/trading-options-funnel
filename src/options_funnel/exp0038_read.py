@@ -118,9 +118,12 @@ def _window(sessions: Sequence[SessionStatus]) -> list[SessionStatus]:
     return [s for s in sessions if s.session <= limit]
 
 
-def status_report(root: Path, start: str, until: str) -> dict[str, Any]:
-    """Counts only: counted sessions and the reasons the others are not counted. No return, no statistic."""
+def status_report(root: Path, start: str, until: str, now: datetime | None = None) -> dict[str, Any]:
+    """Counts only: counted sessions and the reasons the others are not counted. No return, no statistic. With `now`,
+    sessions whose listing may still be sealed (deadline not passed) are left out rather than shown as misses."""
     rows = statuses(root, start, until)
+    if now is not None:
+        rows = [r for r in rows if _listing_deadline(r.session) <= now]
     window = _window(rows)
     ended, after = early_end(window)
     return {
@@ -185,6 +188,22 @@ def _cached(fetch: Fetch, inputs_dir: Path) -> Fetch:
     return wrapped
 
 
+def _saved_listing(
+    inputs_dir: Path, day: str, store_listing: Callable[[str], list[dict[str, Any]]]
+) -> tuple[list[dict[str, Any]], str]:
+    """The store's listing for `day`, fetched once and saved; a re-run after a crash reads the saved bytes."""
+    inputs_dir.mkdir(parents=True, exist_ok=True)
+    path = inputs_dir / f"store-listing-{day}.json"
+    if not path.exists():
+        with open(path, "xb") as fh:
+            fh.write(json.dumps(store_listing(day), sort_keys=True).encode())
+            fh.flush()
+            os.fsync(fh.fileno())
+    data = path.read_bytes()
+    rows: list[dict[str, Any]] = json.loads(data)
+    return rows, hashlib.sha256(data).hexdigest()
+
+
 def _simple_return(bar: tuple[float, float] | None) -> float | None:
     return None if bar is None else bar[1] / bar[0] - 1
 
@@ -204,14 +223,16 @@ def run_read(
     window = _window(sessions)
     counted = [s for s in window if s.counted]
     reasons: Counter[str] = Counter(s.reason for s in window if not s.counted)
+    # Every session in the window sets the read date or the early end, so every one's sealed folders are hashed.
     sealed_inputs = {
         str(f.relative_to(root)): _folder_sha(f)
-        for s in counted
+        for s in window
         for f in sorted((root / "data").glob(f"*/{s.session}*"))
         if (f / MANIFEST).is_file()
     }
     base: dict[str, Any] = {
         **(provenance or {}),
+        "start": start,
         "last_countable": last_countable(sessions),
         "counted": len(counted),
         "sealed_inputs": sealed_inputs,
@@ -222,8 +243,10 @@ def run_read(
         return _write(read_dir, base | {"verdict": "early_end", "after": after, "not_counted": dict(reasons)})
 
     analysed: dict[str, dict[str, Any]] = {}
+    store_listings: dict[str, str] = {}
     for s in counted:
-        if not listing_matches(s.rows, inputs.store_listing(s.session)):
+        store_rows, store_listings[s.session] = _saved_listing(read_dir / "inputs", s.session, inputs.store_listing)
+        if not listing_matches(s.rows, store_rows):
             reasons["listing_mismatch"] += 1
             continue
         assert s.receipt is not None
@@ -232,7 +255,11 @@ def run_read(
             reasons["content_lost"] += 1
             continue
         analysed[s.session] = edition
-    base |= {"analysed": len(analysed), "not_counted_or_not_analysed": dict(reasons)}
+    base |= {
+        "analysed": len(analysed),
+        "not_counted_or_not_analysed": dict(reasons),
+        "store_listings_sha256": store_listings,
+    }
     if len(analysed) < x.MIN_ANALYSED:
         # No bar is fetched and no return worked out (DEC-0055 section 1).
         short = {k: {"verdict": "inconclusive", "analysed": len(analysed)} for k in x.LISTS}
@@ -333,7 +360,7 @@ def run_read(
     )
     for trial, (verdict, stats) in verdicts.items():
         trials[trial] |= {"verdict": verdict, **stats}
-    skills = [(day, skill_hash(root, day)) for day in sorted(analysed)]
+    skills = [(s.session, skill_hash(root, s.session)) for s in counted]
     changes = [list(skills[i]) for i in range(len(skills)) if i == 0 or skills[i][1] != skills[i - 1][1]]
     return _write(
         read_dir,

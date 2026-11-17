@@ -252,7 +252,9 @@ def test_the_read_end_to_end_on_synthetic_sessions(tmp_path: Path, monkeypatch: 
     }
     assert report["desk_config_commits"] == dict.fromkeys(SESSIONS[:4], "abc")
     assert len(report["fetched_pages"]) == 2 and len(fetches) == 2
-    assert len(list((tmp_path / "exp0038-read" / "inputs").iterdir())) == 2
+    saved = sorted(f.name for f in (tmp_path / "exp0038-read" / "inputs").iterdir())
+    assert len(saved) == 7 and saved[-5:] == [f"store-listing-{d}.json" for d in SESSIONS]  # 2 pages, 5 listings
+    assert set(report["store_listings_sha256"]) == set(SESSIONS)
     assert report["trials"]["HYP-0065"]["included"] == 4
     assert report["trials"]["HYP-0065"]["scored_names_per_session"] == {"1": 4}
     assert report["trials"]["HYP-0065"]["name_weighted_check"] == pytest.approx(0.01)
@@ -265,3 +267,23 @@ def test_the_read_end_to_end_on_synthetic_sessions(tmp_path: Path, monkeypatch: 
     assert report["trials"]["HYP-0067"]["mean"] == pytest.approx(0.01 - 0.0)  # BRK.B +1% minus IWM 0%
     assert report["trials"]["HYP-0066"]["mean"] == pytest.approx(0.02 - 0.01)  # five sessions: o(S) to c(S+4)
     assert report["skill_hash_changes"] == [["2026-11-18", "s" * 64]]
+
+
+def test_review_edges(tmp_path: Path) -> None:
+    data = edition("2026-11-18", ["ACME"])
+    rows = make_session(tmp_path, "2026-11-18", data)
+    # The same instant in another format is the same receipt.
+    reformatted = [dict(rows[0], received_at=rows[0]["received_at"].replace("Z", "+00:00"))]
+    assert listing_matches(rows, reformatted)
+    # Status leaves out a session whose listing may still be sealed, rather than showing it as a miss.
+    from datetime import UTC, datetime
+
+    report = r.status_report(tmp_path, "2026-11-18", "2026-11-19", now=datetime(2026, 11, 19, 20, 0, tzinfo=UTC))
+    assert report["sessions"] == 1 and report["counted"] == 1
+    # An unreadable directory is no directory, not a crash.
+    bad = {"edition.json": data, "nasdaqlisted.txt": b"garbage\n", "otherlisted.txt": b"garbage\n"}
+    seal(tmp_path, "radar", "2026-11-19", bad, "2026-11-19T11:13:00Z", {})
+    assert [s.reason for s in r.statuses(tmp_path, "2026-11-19", "2026-11-19")] == ["no_listing"]
+    from options_funnel.exp0038_inputs import directory_for
+
+    assert directory_for(tmp_path, "2026-11-19") is None

@@ -331,7 +331,7 @@ def exp0038_status(args: argparse.Namespace) -> int:
 
     until = args.until or datetime.now(UTC).astimezone(ZoneInfo("America/New_York")).date().isoformat()
     try:
-        report = status_report(args.root, args.start, until)
+        report = status_report(args.root, args.start, until, datetime.now(UTC))
     except (calendar.CalendarError, ValueError, OSError) as error:
         raise InputError(f"{type(error).__name__}: {error}") from error
     print(json.dumps(report, indent=1, sort_keys=True))

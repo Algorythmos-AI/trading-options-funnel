@@ -69,8 +69,12 @@ _ROW_KEYS = ("path", "received_at", "run_id", "lost", "copy_sha256", "edition_sh
 def listing_matches(sealed_rows: Sequence[Mapping[str, Any]], store_rows: Sequence[Mapping[str, Any]]) -> bool:
     """True when the store lists exactly the sealed rows (paths, receipt times, runs, lost flags and hashes)."""
 
+    def norm(row: Mapping[str, Any], k: str) -> Any:
+        # Receipt times compared as instants, so a change of format (Z or +00:00, digits) is not a mismatch.
+        return datetime.fromisoformat(row[k].replace("Z", "+00:00")) if k == "received_at" else row[k]
+
     def key(rows: Sequence[Mapping[str, Any]]) -> list[tuple[Any, ...]]:
-        return sorted(tuple(r[k] for k in _ROW_KEYS) for r in rows)
+        return sorted(tuple(norm(r, k) for k in _ROW_KEYS) for r in rows)
 
     return key(sealed_rows) == key(store_rows)
 
@@ -133,7 +137,12 @@ def directory_for(root: Path, session: str) -> Directory | None:
         if at is None or at >= opening:
             continue
         if a.is_file() and b.is_file() and not verify(folder):
-            return Directory.parse(a.read_bytes().decode("latin-1"), b.read_bytes().decode("latin-1"))
+            try:
+                parsed = Directory.parse(a.read_bytes().decode("latin-1"), b.read_bytes().decode("latin-1"))
+            except (ValueError, KeyError, IndexError):
+                continue  # unreadable: not that day's directory (DEC-0055 section 2)
+            if parsed.etf:  # a file with no symbol row in it is unreadable too
+                return parsed
     return None
 
 
