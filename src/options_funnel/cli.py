@@ -11,7 +11,8 @@
   listing of the radar edition copies for D as data/radar-receipts/D.
 - `exp0038-status --root R --start S [--until D]`: EXP-0038's counted sessions and the reasons for the others; counts
   only, no return and no statistic, so it may run before the read.
-- `exp0038-read --root R --start S --frozen-commit C --tlr PATH --report OUT`: the read, once, at the read date, from
+- `exp0038-read --root R --start S --frozen-commit C --tlr PATH`: the read, once, at the read date, written to
+  `R/exp0038-read/report.json` (fetched pages kept under `R/exp0038-read/inputs/`), from
   this checkout at the frozen commit; needs the Alpaca data keys (APCA_API_KEY_ID, APCA_API_SECRET_KEY) and the
   research key (RADAR_INGEST_SECRET) in the environment.
 - `verify FOLDER...`: check sealed folders against their manifests.
@@ -339,10 +340,10 @@ def exp0038_status(args: argparse.Namespace) -> int:
 
 def exp0038_read(args: argparse.Namespace) -> int:
     from options_funnel.exp0038_inputs import _git, _http
-    from options_funnel.exp0038_read import ReadInputs, ReadRefused, check_frozen, now_session, run_read, write_report
+    from options_funnel.exp0038_read import ReadInputs, ReadRefused, check_frozen, now_session, report_path, run_read
 
-    if args.report.exists():
-        print(f"refusing: {args.report} exists; the read is written once", file=sys.stderr)
+    if report_path(args.root).exists():
+        print(f"refusing: {report_path(args.root)} exists; the read is written once", file=sys.stderr)
         return EXIT_EXISTS
     key, secret = os.environ.get("APCA_API_KEY_ID"), os.environ.get("APCA_API_SECRET_KEY")
     if not key or not secret:
@@ -364,15 +365,15 @@ def exp0038_read(args: argparse.Namespace) -> int:
             fetch=_http,
             alpaca_headers={"APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": secret},
         )
-        report = run_read(args.root, args.start, now_session(datetime.now(UTC)), inputs)
+        provenance = {"frozen_commit": args.frozen_commit, "read_at": _now()}
+        run_read(args.root, args.start, now_session(datetime.now(UTC)), inputs, provenance)
     except ReadRefused as error:
         print(f"refusing: {error}", file=sys.stderr)
         return EXIT_INPUT
     except (WitnessError, OSError, ValueError, KeyError) as error:
         print(f"read failed before any statistic was printed: {type(error).__name__}: {error}", file=sys.stderr)
         return EXIT_INPUT
-    write_report(args.report, report | {"frozen_commit": args.frozen_commit, "read_at": _now()})
-    print(f"read written to {args.report}")
+    print(f"read written to {report_path(args.root)}")
     return 0
 
 
@@ -471,7 +472,6 @@ def main(argv: list[str] | None = None) -> int:
     er.add_argument("--start", required=True)
     er.add_argument("--frozen-commit", required=True)
     er.add_argument("--tlr", type=Path, required=True, help="a trading-lab-research checkout with origin/main fetched")
-    er.add_argument("--report", type=Path, required=True)
     er.add_argument("--base", default=DEFAULT_BASE)
     er.set_defaults(run=exp0038_read)
     vf = sub.add_parser("verify", help="check sealed folders against their manifests")

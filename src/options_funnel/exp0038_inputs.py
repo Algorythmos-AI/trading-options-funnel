@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -111,14 +111,27 @@ def scored_content(
     return parsed if isinstance(parsed, dict) else None
 
 
+def sealed_at(folder: Path) -> datetime | None:
+    try:
+        value = json.loads((folder / MANIFEST).read_text()).get("sealed_at")
+        return datetime.fromisoformat(value.replace("Z", "+00:00")) if isinstance(value, str) else None
+    except (OSError, ValueError):
+        return None
+
+
 def directory_for(root: Path, session: str) -> Directory | None:
-    """The first sealed radar folder of `session` that holds both directory files, parsed; None when there is none."""
+    """The first sealed radar folder of `session`, sealed before 09:30 New York on it, that holds both directory files,
+    parsed; None when there is none (a directory sealed at or after the open is not that day's)."""
+    opening = datetime.combine(datetime.fromisoformat(session).date(), time(9, 30), NEW_YORK)
     folders = sorted(
         (p for p in (root / "data" / "radar").glob(f"{session}*") if p.is_dir()),
         key=lambda p: int(p.name.split(".r")[1]) if ".r" in p.name else 1,
     )
     for folder in folders:
         a, b = folder / "nasdaqlisted.txt", folder / "otherlisted.txt"
+        at = sealed_at(folder)
+        if at is None or at >= opening:
+            continue
         if a.is_file() and b.is_file() and not verify(folder):
             return Directory.parse(a.read_bytes().decode("latin-1"), b.read_bytes().decode("latin-1"))
     return None
@@ -145,11 +158,17 @@ def _git(repo: Path) -> Git:
 
 def desk_names_at(session: str, git: Git) -> frozenset[str]:
     """The desk's names in config/options_desk.yaml on origin/main as it stood at 09:30 New York on `session`."""
+    return desk_names_commit(session, git)[1]
+
+
+def desk_names_commit(session: str, git: Git) -> tuple[str, frozenset[str]]:
+    """The first-parent origin/main commit in force at 09:30 New York on `session`, and its desk names. First parent
+    only, so a commit made on integration before 09:30 and merged to main after it is not taken."""
     at = datetime.combine(datetime.fromisoformat(session).date(), time(9, 30), NEW_YORK)
-    commit = git(["rev-list", "-1", f"--before={at.isoformat()}", "origin/main"]).strip()
+    commit = git(["rev-list", "-1", "--first-parent", f"--before={at.isoformat()}", "origin/main"]).strip()
     if not commit:
         raise InputError(f"no origin/main commit before {at.isoformat()}")
-    return parse_desk_names(git(["show", f"{commit}:config/options_desk.yaml"]))
+    return commit, parse_desk_names(git(["show", f"{commit}:config/options_desk.yaml"]))
 
 
 _NAMES = re.compile(r"^names:\s*\[([^\]]*)\]\s*(#.*)?$", re.MULTILINE)
@@ -167,6 +186,14 @@ def parse_desk_names(text: str) -> frozenset[str]:
 
 
 Fetch = Callable[[str, Mapping[str, str]], bytes]
+
+
+def _ny_midnight(day: str) -> str:
+    return datetime.combine(datetime.fromisoformat(day).date(), time(0, 0), NEW_YORK).isoformat()
+
+
+def _next_day(day: str) -> str:
+    return (datetime.fromisoformat(day).date() + timedelta(days=1)).isoformat()
 
 
 def _http(url: str, headers: Mapping[str, str]) -> bytes:
@@ -233,8 +260,10 @@ def daily_bars(
             "timeframe": "1Day",
             "feed": "sip",
             "adjustment": "all",
-            "start": start,
-            "end": end,
+            # RFC-3339 New York midnights, the end the day after the last one, so the last day's bar is in.
+            "start": _ny_midnight(start),
+            "end": _ny_midnight(_next_day(end)),
+            "asof": end,
             "limit": "10000",
         }
         for page in _paged("https://data.alpaca.markets/v2/stocks/bars", params, headers, fetch, log):
