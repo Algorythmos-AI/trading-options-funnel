@@ -34,10 +34,15 @@ weekday rule.
 
 ## The data branch
 
-The routines commit sealed evidence to `data` from claude.ai, where no pre-push hook runs. The guard therefore
-holds the rule itself: on `data`, every path outside `data/` must be byte-identical to `main`
-(`GATE_MAIN_REF`, default `origin/main`), and CI runs on every push to `data` once Actions can start. To bring a
-change from `main` into `data`, merge `main` into `data`; nothing else may change there.
+`data` is an orphan branch: it shares no history with `main` and holds nothing but `data/`. The routines commit
+sealed evidence there from claude.ai, where no pre-push hook runs, so the guard carries the rule itself: on `data`,
+any path outside `data/` is refused, and CI runs on every push to `data` once Actions can start. Code is never
+needed there: the routine runs this repository's code from a checkout of `main` and writes into a checkout of
+`data`.
+
+Layout and rules of a sealed folder: `options_funnel/seal.py`. Check them with
+`.venv/bin/python -m options_funnel.cli verify data/<kind>/<session>` and replay a night with
+`.venv/bin/python -m options_funnel.cli replay-focus data/focus/<session>`.
 
 ## Candidate records
 

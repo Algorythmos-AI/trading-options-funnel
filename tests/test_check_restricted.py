@@ -65,16 +65,14 @@ def _commit(repo: Path, files: dict[str, str], message: str) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def test_data_branch_may_change_only_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _git(tmp_path, "init", "-q", "-b", "main")
-    main = _commit(tmp_path, {"README.md": "a"}, "main")
-    _git(tmp_path, "checkout", "-q", "-b", "data")
-    good = _commit(tmp_path, {"data/radar/x.json": "{}"}, "evidence")
-    bad = _commit(tmp_path, {"README.md": "changed"}, "not evidence")
+def test_data_branch_holds_only_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _git(tmp_path, "init", "-q", "-b", "data")
+    good = _commit(tmp_path, {"data/radar/2026-11-17/edition.json": "{}"}, "evidence")
+    bad = _commit(tmp_path, {"README.md": "code"}, "not evidence")
     monkeypatch.chdir(tmp_path)
-    assert check.problems(good, "data", main) == []
-    assert any("README.md" in p for p in check.problems(bad, "data", main))
-    assert any("data/" in p for p in check.problems(good, "main", main))
+    assert check.problems(good, "data") == []
+    assert any("README.md" in p for p in check.problems(bad, "data"))
+    assert any("data/" in p for p in check.problems(good, "main"))
 
 
 def test_a_file_added_then_removed_is_caught_in_a_range(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -85,6 +83,5 @@ def test_a_file_added_then_removed_is_caught_in_a_range(tmp_path: Path, monkeypa
     tip = _commit(tmp_path, {}, "remove")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("GATE_BRANCH", "main")
-    monkeypatch.setenv("GATE_MAIN_REF", base)
     assert check.main(["--range", f"{base}..{tip}"]) == 1
     assert check.main(["--range", f"{tip}^!"]) == 0

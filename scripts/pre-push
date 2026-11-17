@@ -3,9 +3,10 @@
 #   1. the restricted-path guard on EVERY commit the remote does not have yet (so a file added and later deleted
 #      is still caught), each judged on its own tree;
 #   2. the full gate (`make check`) on the tip, in a temporary worktree, so it judges what is pushed, not the
-#      working copy.
+#      working copy. The orphan `data` branch holds no code, so step 1 is its whole gate.
 set -euo pipefail
-top="$(git rev-parse --show-toplevel)"
+# The main checkout (where .venv and the guard live), even when pushing from a linked worktree.
+top="$(cd "$(git rev-parse --path-format=absolute --git-common-dir)/.." && pwd)"
 zero="0000000000000000000000000000000000000000"
 status=0
 tmp=""
@@ -37,6 +38,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       status=1
     fi
   done
+  if [ "$branch" = "data" ]; then
+    # The orphan data branch holds no code to test: the per-commit guard above is its whole gate.
+    [ "$status" = 0 ] || echo "pre-push: the gate failed for $local_ref; nothing was pushed" >&2
+    continue
+  fi
   tmp="$(mktemp -d)"
   git -C "$top" worktree add -q --detach "$tmp/tree" "$local_sha"
   ln -s "$top/.venv" "$tmp/tree/.venv"
