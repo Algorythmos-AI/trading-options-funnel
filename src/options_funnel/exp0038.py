@@ -11,9 +11,9 @@ functions once, at the read date (DEC-0055 section 5: nobody computes EXP-0038's
 - `bootstrap_means`, `block_bootstrap_means`, `percentile`, `p_value`, `holm`, `halves_positive`: the statistics.
 - `decide`: the three verdicts, with the 60-analysed-session gate first.
 
-Not here yet (the rest of DEC-0055 precondition 5, built before its commit is recorded): reading the sealed listing
-into receipts, the read-time store and content checks, `desk_added` from the desk config, the spin-off exclusion, the
-bar fetch, and the report items (name-weighted check, largest-name share, skill-hash changes).
+The inputs (sealed listings, read-time checks, desk names over time, spin-offs, bars) are in
+`options_funnel.exp0038_inputs`; the status, the read's assembly, its guards and the report in
+`options_funnel.exp0038_read`.
 """
 
 from __future__ import annotations

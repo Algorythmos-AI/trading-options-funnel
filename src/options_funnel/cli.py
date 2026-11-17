@@ -9,6 +9,12 @@
   Nasdaq Trader symbol directory and the Radar skill bundle's sha256; the session defaults to the file's date.
 - `seal-receipts --root R --date D [--base URL] [--routine ID]`: after 09:30 New York on D, seal the dashboard's
   listing of the radar edition copies for D as data/radar-receipts/D.
+- `exp0038-status --root R --start S [--until D]`: EXP-0038's counted sessions and the reasons for the others; counts
+  only, no return and no statistic, so it may run before the read.
+- `exp0038-read --root R --start S --frozen-commit C --tlr PATH`: the read, once, at the read date, written to
+  `R/exp0038-read/report.json` (fetched pages kept under `R/exp0038-read/inputs/`), from
+  this checkout at the frozen commit; needs the Alpaca data keys (APCA_API_KEY_ID, APCA_API_SECRET_KEY) and the
+  research key (RADAR_INGEST_SECRET) in the environment.
 - `verify FOLDER...`: check sealed folders against their manifests.
 - `replay-focus FOLDER...`: run the port on sealed inputs and compare with the sealed focus file.
 - `funnel-health --root R --session S [--out F] [--send] [--base URL]`: build the dashboard's health document for a
@@ -38,6 +44,7 @@ import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from options_funnel import calendar
 from options_funnel.blind import BlindRuleError, assert_blind
@@ -319,6 +326,57 @@ def _seal(args: argparse.Namespace, kind: str, session: str, files: dict[str, by
     return 0
 
 
+def exp0038_status(args: argparse.Namespace) -> int:
+    from options_funnel.exp0038_read import status_report
+
+    until = args.until or datetime.now(UTC).astimezone(ZoneInfo("America/New_York")).date().isoformat()
+    try:
+        report = status_report(args.root, args.start, until, datetime.now(UTC))
+    except (calendar.CalendarError, ValueError, OSError) as error:
+        raise InputError(f"{type(error).__name__}: {error}") from error
+    print(json.dumps(report, indent=1, sort_keys=True))
+    return 0
+
+
+def exp0038_read(args: argparse.Namespace) -> int:
+    from options_funnel.exp0038_inputs import _git, _http
+    from options_funnel.exp0038_read import ReadInputs, ReadRefused, check_frozen, now_session, report_path, run_read
+
+    if report_path(args.root).exists():
+        print(f"refusing: {report_path(args.root)} exists; the read is written once", file=sys.stderr)
+        return EXIT_EXISTS
+    key, secret = os.environ.get("APCA_API_KEY_ID"), os.environ.get("APCA_API_SECRET_KEY")
+    if not key or not secret:
+        raise InputError("APCA_API_KEY_ID and APCA_API_SECRET_KEY must be set")
+    here = Path(__file__).resolve().parents[2]
+    try:
+        check_frozen(here, args.frozen_commit, _git(here))
+
+        def store_listing(day: str) -> list[dict[str, object]]:
+            rows: list[dict[str, object]] = json.loads(fetch_listing(args.base, day, time.time()))["copies"]
+            return rows
+
+        inputs = ReadInputs(
+            store_listing=store_listing,
+            # The store's copies are read through the sealed radar editions (DEC-0055 section 1's fallback): the
+            # research key has no read of copy content.
+            read_store_copy=lambda _path: None,
+            git=_git(args.tlr),
+            fetch=_http,
+            alpaca_headers={"APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": secret},
+        )
+        provenance = {"frozen_commit": args.frozen_commit, "read_at": _now()}
+        run_read(args.root, args.start, now_session(datetime.now(UTC)), inputs, provenance)
+    except ReadRefused as error:
+        print(f"refusing: {error}", file=sys.stderr)
+        return EXIT_INPUT
+    except (WitnessError, OSError, ValueError, KeyError) as error:
+        print(f"read failed before any statistic was printed: {type(error).__name__}: {error}", file=sys.stderr)
+        return EXIT_INPUT
+    print(f"read written to {report_path(args.root)}")
+    return 0
+
+
 def verify_cmd(args: argparse.Namespace) -> int:
     problems = [p for folder in args.folders for p in verify(folder)]
     for problem in problems:
@@ -404,6 +462,18 @@ def main(argv: list[str] | None = None) -> int:
     rr.add_argument("--base", default=DEFAULT_BASE)
     rr.add_argument("--routine")
     rr.set_defaults(run=seal_receipts)
+    es = sub.add_parser("exp0038-status", help="EXP-0038 counted sessions and reasons (counts only)")
+    es.add_argument("--root", type=Path, required=True)
+    es.add_argument("--start", required=True)
+    es.add_argument("--until")
+    es.set_defaults(run=exp0038_status)
+    er = sub.add_parser("exp0038-read", help="EXP-0038's read, once, at the read date")
+    er.add_argument("--root", type=Path, required=True)
+    er.add_argument("--start", required=True)
+    er.add_argument("--frozen-commit", required=True)
+    er.add_argument("--tlr", type=Path, required=True, help="a trading-lab-research checkout with origin/main fetched")
+    er.add_argument("--base", default=DEFAULT_BASE)
+    er.set_defaults(run=exp0038_read)
     vf = sub.add_parser("verify", help="check sealed folders against their manifests")
     vf.add_argument("folders", type=Path, nargs="+")
     vf.set_defaults(run=verify_cmd)
