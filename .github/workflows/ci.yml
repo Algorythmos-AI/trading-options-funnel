@@ -2,7 +2,7 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main, data]
+    branches: [main]
 permissions:
   contents: read
 jobs:

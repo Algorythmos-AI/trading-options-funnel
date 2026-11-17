@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import math
 from pathlib import Path
 
 from options_funnel.focus_pick import pick
@@ -36,6 +37,15 @@ def replay_focus(folder: Path) -> list[str]:
     else:
         for mine, theirs in zip(ported, published, strict=True):
             for key in sorted(set(mine) | set(theirs)):
-                if mine.get(key) != theirs.get(key):
+                if not _same(mine.get(key), theirs.get(key)):
                     out.append(f"{mine['symbol']}.{key}: port {mine.get(key)!r}, sealed {theirs.get(key)!r}")
     return out
+
+
+def _same(a: object, b: object) -> bool:
+    """Equal, with floats compared to 1e-9 (both sides come from the same rounding)."""
+    if isinstance(a, float) or isinstance(b, float):
+        return isinstance(a, int | float) and isinstance(b, int | float) and math.isclose(a, b, abs_tol=1e-9)
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_same(a[k], b[k]) for k in a)
+    return a == b

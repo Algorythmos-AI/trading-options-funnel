@@ -2,8 +2,10 @@
 
 - `focus-pick LEVELS IV_HISTORY --candidates OUT.jsonl [--focus OUT.json]`: score every desk name the way the cloud
   picker does; one candidate record per name and, if asked, the focus document (without `picked_at`/`premarket`).
-- `seal-focus --root R --levels L --iv-history IV --focus F [--replaces FOLDER]`: seal one night's picker evidence.
-- `seal-radar --root R --session S --edition E [--replaces FOLDER]`: seal one radar edition as sent.
+- `seal-focus --root R --levels L --iv-history IV --focus F [--routine ID] [--correction]`: seal one night's picker
+  evidence (refuses a focus file the pre-open pass has already edited).
+- `seal-radar --root R --edition OUTBOX/<date>.json [--session D] [--http-status N] [--sent-at T] [--routine ID]
+  [--correction]`: seal one radar edition as sent; the session defaults to the file's date.
 - `verify FOLDER...`: check sealed folders against their manifests.
 - `replay-focus FOLDER...`: run the port on sealed inputs and compare with the sealed focus file.
 
@@ -12,7 +14,9 @@ into place, which fails if the target exists: a run never overwrites, and never 
 
 Exit codes: 0 done; 1 an output already exists; 3 bad input (missing file, bad CSV header, a name the record
 cannot describe); 4 an output could not be written (missing folder, no permission, disk); 5 a sealed folder does
-not verify or does not replay. On any failure after writing has started, every output this run created is removed.
+not verify or does not replay; 6 the session is already sealed with different bytes (a change needs --correction).
+Sealing the same bytes again exits 0 and says "already sealed, identical". On any failure after writing has
+started, every output this run created is removed.
 """
 
 from __future__ import annotations
@@ -21,6 +25,8 @@ import argparse
 import csv
 import json
 import os
+import re
+import subprocess
 import sys
 import tempfile
 from datetime import UTC, datetime
@@ -30,13 +36,14 @@ from options_funnel.blind import BlindRuleError, assert_blind
 from options_funnel.candidates import dump_jsonl
 from options_funnel.focus_pick import pick
 from options_funnel.replay import replay_focus
-from options_funnel.seal import SealError, iv_rows_for, seal, sha256, verify
+from options_funnel.seal import AlreadySealedDifferent, SealError, check_session, iv_rows_for, seal, sha256, verify
 
 IV_COLUMNS = frozenset({"session", "ticker", "call_vol", "put_vol", "avg_call_vol", "avg_put_vol"})
 EXIT_EXISTS = 1
 EXIT_INPUT = 3
 EXIT_WRITE = 4
 EXIT_MISMATCH = 5
+EXIT_SEALED_DIFFERENT = 6
 
 
 class InputError(ValueError):
@@ -145,6 +152,30 @@ def _now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
 
 
+def code_commit() -> str | None:
+    """The commit of this repository's code that is sealing (None when not run from a git checkout)."""
+    here = str(Path(__file__).resolve().parent)
+    try:
+        head = subprocess.run(["git", "-C", here, "rev-parse", "HEAD"], check=True, capture_output=True, text=True)
+        dirty = subprocess.run(
+            ["git", "-C", here, "status", "--porcelain", "--untracked-files=no"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return head.stdout.strip() + ("+dirty" if dirty.stdout.strip() else "")
+
+
+def _base_provenance(args: argparse.Namespace, sources: dict[str, Path]) -> dict[str, object]:
+    return {
+        "code_commit": code_commit(),
+        "routine": args.routine,
+        "sources": {name: str(path) for name, path in sorted(sources.items())},
+    }
+
+
 def seal_focus(args: argparse.Namespace) -> int:
     try:
         levels_bytes = args.levels.read_bytes()
@@ -153,36 +184,51 @@ def seal_focus(args: argparse.Namespace) -> int:
         levels = json.loads(levels_bytes.decode("utf-8-sig"))
         focus = json.loads(focus_bytes.decode("utf-8-sig"))
         session, built = levels["session"], levels["built_from"]
-        if focus.get("session") != session:
-            raise InputError(f"focus file is for {focus.get('session')!r}, levels file for {session!r}")
+        if focus.get("session") != session or focus.get("built_from") != built:
+            raise InputError(
+                f"focus file is for {focus.get('session')!r} built from {focus.get('built_from')!r}; "
+                f"levels file for {session!r} built from {built!r}"
+            )
+        if focus.get("premarket") is not None:
+            raise InputError("the focus file already carries the pre-open pass; seal it before the pre-open run")
         files = {"levels.json": levels_bytes, "iv_rows.csv": iv_rows_for(iv_bytes, built), "focus.json": focus_bytes}
     except (OSError, KeyError, TypeError, SealError, json.JSONDecodeError) as error:
         raise InputError(f"{type(error).__name__}: {error}") from error
-    provenance = {"iv_history_sha256": sha256(iv_bytes), "iv_history_size": len(iv_bytes), "built_from": built}
+    provenance = _base_provenance(args, {"levels": args.levels, "iv_history": args.iv_history, "focus": args.focus})
+    provenance |= {"iv_history_sha256": sha256(iv_bytes), "iv_history_size": len(iv_bytes), "built_from": built}
     return _seal(args, "focus", session, files, provenance)
+
+
+DATE_NAME = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def seal_radar(args: argparse.Namespace) -> int:
     try:
         edition = args.edition.read_bytes()
         json.loads(edition.decode("utf-8-sig"))
-    except (OSError, json.JSONDecodeError) as error:
+        session = args.session or args.edition.stem
+        check_session(session)
+        if args.session and DATE_NAME.fullmatch(args.edition.stem) and args.edition.stem != args.session:
+            raise InputError(f"--session {args.session} does not match the file's date {args.edition.stem}")
+    except (OSError, SealError, json.JSONDecodeError) as error:
         raise InputError(f"{type(error).__name__}: {error}") from error
-    return _seal(args, "radar", args.session, {"edition.json": edition}, {})
+    provenance = _base_provenance(args, {"edition": args.edition})
+    provenance |= {"http_status": args.http_status, "sent_at": args.sent_at}
+    return _seal(args, "radar", session, {"edition.json": edition}, provenance)
 
 
 def _seal(args: argparse.Namespace, kind: str, session: str, files: dict[str, bytes], prov: dict[str, object]) -> int:
     try:
-        sealed = seal(args.root, kind, session, files, _now(), prov, args.replaces)
+        sealed = seal(args.root, kind, session, files, _now(), prov, args.correction)
+    except AlreadySealedDifferent as error:
+        print(str(error), file=sys.stderr)
+        return EXIT_SEALED_DIFFERENT
     except SealError as error:
-        if "already sealed" in str(error):
-            print(str(error), file=sys.stderr)
-            return EXIT_EXISTS
         raise InputError(str(error)) from error
     except OSError as error:
         print(f"could not write: {error}", file=sys.stderr)
         return EXIT_WRITE
-    print(f"sealed {sealed.folder}")
+    print(f"{'sealed' if sealed.created else 'already sealed, identical:'} {sealed.folder}")
     return 0
 
 
@@ -222,13 +268,17 @@ def main(argv: list[str] | None = None) -> int:
     sf.add_argument("--levels", type=Path, required=True)
     sf.add_argument("--iv-history", type=Path, required=True)
     sf.add_argument("--focus", type=Path, required=True)
-    sf.add_argument("--replaces")
+    sf.add_argument("--routine")
+    sf.add_argument("--correction", action="store_true")
     sf.set_defaults(run=seal_focus)
     sr = sub.add_parser("seal-radar", help="seal one radar edition as sent")
     sr.add_argument("--root", type=Path, required=True)
-    sr.add_argument("--session", required=True)
+    sr.add_argument("--session")
     sr.add_argument("--edition", type=Path, required=True)
-    sr.add_argument("--replaces")
+    sr.add_argument("--http-status", type=int)
+    sr.add_argument("--sent-at")
+    sr.add_argument("--routine")
+    sr.add_argument("--correction", action="store_true")
     sr.set_defaults(run=seal_radar)
     vf = sub.add_parser("verify", help="check sealed folders against their manifests")
     vf.add_argument("folders", type=Path, nargs="+")
