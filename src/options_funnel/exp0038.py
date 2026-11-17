@@ -6,8 +6,14 @@ functions once, at the read date (DEC-0055 section 5: nobody computes EXP-0038's
 - `Mulberry32`: the generator EXP-0032 defines, checked against EXP-0038's generator_test_vectors.
 - `normalise_symbol`, `Directory`: the unit's symbol rules and the sealed Nasdaq Trader directory (DEC-0055 section 2).
 - `scored_names`: a list's names after every frozen exclusion, each excluded name with its reason.
-- `counted_status`: the daily counting rule (DEC-0055 section 1), from the sealed receipt listing and directory.
+- `counted_status`, `counted_for`: the daily counting rule (DEC-0055 section 1), from the sealed receipt listing and
+  directory, the previous close from the pinned market calendar (`options_funnel.calendar`).
 - `bootstrap_means`, `block_bootstrap_means`, `percentile`, `p_value`, `holm`, `halves_positive`: the statistics.
+- `decide`: the three verdicts, with the 60-analysed-session gate first.
+
+Not here yet (the rest of DEC-0055 precondition 5, built before its commit is recorded): reading the sealed listing
+into receipts, the read-time store and content checks, `desk_added` from the desk config, the spin-off exclusion, the
+bar fetch, and the report items (name-weighted check, largest-name share, skill-hash changes).
 """
 
 from __future__ import annotations
@@ -19,6 +25,8 @@ from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Any
 from zoneinfo import ZoneInfo
+
+from options_funnel import calendar
 
 NEW_YORK = ZoneInfo("America/New_York")
 DESK_NAMES = frozenset({"SPY", "QQQ", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "PLTR", "AVGO", "AMD"})
@@ -108,7 +116,10 @@ def scored_names(
     for raw in symbols:
         symbol = normalise_symbol(raw)
         if symbol is None:
-            out.append((str(raw), "unknown_symbol"))
+            key = str(raw).strip()
+            if key not in seen:
+                seen.add(key)
+                out.append((key, "unknown_symbol"))
             continue
         if symbol in seen:
             continue
@@ -169,6 +180,13 @@ def counted_status(
     if not directory_ok:
         return False, "no_directory"
     return True, "counted"
+
+
+def counted_for(
+    session: str, listing_sealed: bool, receipts: Sequence[Receipt], directory_ok: bool
+) -> tuple[bool, str]:
+    """`counted_status` with the previous session's close from the pinned calendar (13:00 on a half day)."""
+    return counted_status(listing_sealed, receipts, directory_ok, calendar.load().previous_close(session), session)
 
 
 def mean(values: Sequence[float]) -> float:
@@ -286,9 +304,16 @@ def decide_primary(d: Sequence[float], seed: int = SEEDS["HYP-0065"]) -> tuple[V
 
 
 def decide_secondary(
-    trials: Mapping[str, tuple[Sequence[float], Callable[[], list[float]]]],
+    hyp_0066_counted: Sequence[float | None], hyp_0067: Sequence[float]
 ) -> dict[str, tuple[Verdict, dict[str, float]]]:
-    """HYP-0066 and HYP-0067: Holm over both, an inconclusive trial's p taken as 1, and both halves > 0."""
+    """HYP-0066 (block bootstrap over its counted series, None where a counted session is not included) and HYP-0067
+    (session bootstrap): Holm over both, an inconclusive trial's p taken as 1, and both halves > 0. Seeds and methods
+    are fixed here, never passed in."""
+    d66 = [v for v in hyp_0066_counted if v is not None]
+    trials: dict[str, tuple[Sequence[float], Callable[[], list[float]]]] = {
+        "HYP-0066": (d66, lambda: block_bootstrap_means(hyp_0066_counted, SEEDS["HYP-0066"])),
+        "HYP-0067": (hyp_0067, lambda: bootstrap_means(hyp_0067, SEEDS["HYP-0067"])),
+    }
     p: dict[str, float] = {}
     stats: dict[str, dict[str, float]] = {}
     for key, (d, draw) in trials.items():
@@ -312,4 +337,22 @@ def decide_secondary(
             out[key] = ("inconclusive", stats[key])
         else:
             out[key] = ("supported" if passed[key] and halves_positive(d) else "falsified", stats[key])
+    return out
+
+
+def decide(
+    analysed_sessions: int,
+    hyp_0065: Sequence[float],
+    hyp_0066_counted: Sequence[float | None],
+    hyp_0067: Sequence[float],
+) -> dict[str, tuple[Verdict, dict[str, float]]]:
+    """All three verdicts. Fewer than 60 analysed sessions: every trial inconclusive, and no statistic is worked out
+    (DEC-0055 section 1), not even a mean."""
+    if analysed_sessions < MIN_ANALYSED:
+        return {
+            key: ("inconclusive", {"analysed": float(analysed_sessions)})
+            for key in ("HYP-0065", "HYP-0066", "HYP-0067")
+        }
+    out = {"HYP-0065": decide_primary(hyp_0065)}
+    out.update(decide_secondary(hyp_0066_counted, hyp_0067))
     return out

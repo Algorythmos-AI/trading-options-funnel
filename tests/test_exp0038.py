@@ -165,10 +165,36 @@ def test_the_verdicts_on_synthetic_series() -> None:
     assert x.decide_primary(strong)[0] == "supported"
     assert x.decide_primary(none)[0] == "falsified"
     assert x.decide_primary(strong[:39])[0] == "inconclusive"
-    out = x.decide_secondary(
-        {
-            "HYP-0066": (strong, lambda: x.block_bootstrap_means(list(strong), x.SEEDS["HYP-0066"], 500)),
-            "HYP-0067": (strong[:10], lambda: []),
-        }
-    )
+    out = x.decide_secondary(list(strong), strong[:10])
     assert out["HYP-0066"][0] == "supported" and out["HYP-0067"][0] == "inconclusive"
+
+
+def test_fewer_than_sixty_analysed_sessions_work_out_no_statistic(monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(*_a: object, **_k: object) -> list[float]:
+        raise AssertionError("no bootstrap below 60 analysed sessions")
+
+    monkeypatch.setattr(x, "bootstrap_means", boom)
+    monkeypatch.setattr(x, "block_bootstrap_means", boom)
+    strong = [0.02] * 59
+    out = x.decide(59, strong, list(strong), strong)
+    assert {k: v[0] for k, v in out.items()} == {
+        "HYP-0065": "inconclusive",
+        "HYP-0066": "inconclusive",
+        "HYP-0067": "inconclusive",
+    }
+    assert all("mean" not in v[1] for v in out.values())
+
+
+def test_percentile_matches_numpy_on_a_pinned_vector() -> None:
+    import json
+
+    doc = json.loads((HERE / "fixtures" / "percentile_vector.json").read_text())
+    for p, want in doc["numpy"].items():
+        assert x.percentile(doc["values"], float(p)) == pytest.approx(want, abs=1e-12)
+
+
+def test_counted_for_uses_the_calendar_previous_close() -> None:
+    # 2026-11-30 follows the 27 Nov half day: a copy at 13:30 New York on the 27th is after that close.
+    late_half_day = receipt("2026-11-27T18:30:00+00:00")
+    assert x.counted_for("2026-11-30", True, [late_half_day], True) == (True, "counted")
+    assert x.counted_for("2026-11-30", True, [receipt("2026-11-27T17:30:00+00:00")], True) == (False, "early")
