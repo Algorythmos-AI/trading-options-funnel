@@ -23,6 +23,7 @@ def listing(date: str = DATE) -> dict[str, Any]:
         "path": f"radar/copies/{date}/20261118T111240123Z-radar-a.json",
         "received_at": "2026-11-18T11:12:40.123Z",
         "run_id": "radar-a",
+        "lost": False,
         "copy_sha256": "a" * 64,
         "edition_sha256": "b" * 64,
     }
@@ -56,6 +57,12 @@ def test_a_listing_must_be_for_its_date_and_well_formed() -> None:
         check_listing(json.dumps(bad).encode(), DATE)
     with pytest.raises(WitnessError):
         check_listing(b"[]", DATE)
+    lost = listing()
+    lost["copies"][0].update({"lost": True, "copy_sha256": None, "edition_sha256": None})
+    check_listing(json.dumps(lost).encode(), DATE)
+    lost["copies"][0]["copy_sha256"] = "a" * 64
+    with pytest.raises(WitnessError, match="lost"):
+        check_listing(json.dumps(lost).encode(), DATE)
 
 
 def test_the_signature_binds_the_date() -> None:

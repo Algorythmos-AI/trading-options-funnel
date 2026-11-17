@@ -86,11 +86,16 @@ def check_listing(data: bytes, date: str) -> dict[str, Any]:
     if doc.get("date") != date or not isinstance(doc.get("copies"), list):
         raise WitnessError("the listing is for another date or has no copies list")
     for row in doc["copies"]:
-        keys = {"path", "received_at", "run_id", "copy_sha256", "edition_sha256"}
-        if not isinstance(row, dict) or set(row) != keys:
+        keys = {"path", "received_at", "run_id", "lost", "copy_sha256", "edition_sha256"}
+        if not isinstance(row, dict) or set(row) != keys or not isinstance(row["lost"], bool):
             raise WitnessError("a listing row has the wrong keys")
         if not str(row["path"]).startswith(f"radar/copies/{date}/"):
             raise WitnessError("a listing row is for another date")
+        hashes = (row["copy_sha256"], row["edition_sha256"])
+        if row["lost"] and hashes != (None, None):
+            raise WitnessError("a lost row has hashes")
+        if not row["lost"] and not all(isinstance(h, str) and len(h) == 64 for h in hashes):
+            raise WitnessError("a kept row lacks its hashes")
     return doc
 
 
