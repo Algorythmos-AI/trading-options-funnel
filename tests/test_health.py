@@ -53,7 +53,7 @@ def test_a_sealed_night_gives_a_valid_document(tmp_path: Path) -> None:
     radar, focus = doc["stages"]
     assert radar == {
         "stage": "radar",
-        "evidence": "sealed",
+        "evidence": "present",
         "sealed_at": radar["sealed_at"],
         "corrections": 0,
         "names_judged": None,
@@ -61,7 +61,7 @@ def test_a_sealed_night_gives_a_valid_document(tmp_path: Path) -> None:
         "flags": [],
         "replay": "not_run",
     }
-    assert focus["evidence"] == "sealed" and focus["replay"] == "match"
+    assert focus["evidence"] == "present" and focus["replay"] == "match"
     assert focus["names_judged"] == 12 and focus["names_kept"] == 4
     text = json.dumps(doc)
     for symbol in ("NVDA", "AMD", "MSFT", "SPY"):

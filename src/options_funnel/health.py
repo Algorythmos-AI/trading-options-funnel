@@ -78,7 +78,7 @@ def focus_stage(root: Path, session: str) -> tuple[dict[str, Any], str | None]:
     records = pick(levels, rows).candidates
     flags = Counter(flag for record in records for flag in record.flags)
     stage |= {
-        "evidence": "sealed",
+        "evidence": "present",
         "names_judged": len(records),
         "names_kept": sum(1 for r in records if r.rank is not None),
         "flags": [{"code": code, "names": n} for code, n in sorted(flags.items())],
@@ -107,7 +107,7 @@ def radar_stage(root: Path, session: str | None) -> dict[str, Any]:
         for s in entry.get("symbols") or []
         if isinstance(s, str)
     }
-    return stage | {"evidence": "sealed", "names_kept": len(names) if lists is not None else None}
+    return stage | {"evidence": "present", "names_kept": len(names) if lists is not None else None}
 
 
 def build(root: Path, session: str, as_of: str, code_commit: str | None) -> dict[str, Any]:
