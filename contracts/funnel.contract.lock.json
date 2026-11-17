@@ -1,0 +1,7 @@
+{
+ "source_repo": "Algorythmos-AI/trading-lab-research",
+ "source_path": "dashboard/src/lib/funnel.schema.json",
+ "source_commit": null,
+ "sha256": "8f349937f6776c286b03b682dacdf2046993da750769fb7af65eefabbcfb5e8f",
+ "note": "source_commit is set once the dashboard PR that adds the schema is merged into integration"
+}
