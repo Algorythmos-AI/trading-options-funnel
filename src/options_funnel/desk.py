@@ -21,6 +21,7 @@ file would not verify, and its session would leave EXP-0038).
 
     python -m options_funnel.desk seal   --root R --session S --earnings P --macro P --desk-config P --wt-commit SHA
     python -m options_funnel.desk check  --root R --session S     # rebuild from the sealed copies, compare bytes
+    python -m options_funnel.desk send   --root R --session S     # the latest sealed desk file, to the dashboard
     python -m options_funnel.desk verify FOLDER...
 """
 
@@ -31,14 +32,19 @@ import csv
 import io
 import json
 import math
+import os
 import re
 import sys
+import time
+import urllib.error
+import urllib.request
 from collections.abc import Mapping, Sequence
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
 from options_funnel import calendar as cal
+from options_funnel import publish
 from options_funnel.blind import BlindRuleError, assert_blind
 
 # Private names of seal.py and cli.py are used on purpose: both files are part of EXP-0038's frozen analysis commit
@@ -47,6 +53,7 @@ from options_funnel.cli import (
     EXIT_INPUT,
     EXIT_MISMATCH,
     EXIT_SEALED_DIFFERENT,
+    EXIT_SEND,
     EXIT_WRITE,
     _base_provenance,
     _now,
@@ -103,6 +110,8 @@ LOOKAHEAD_DAYS = 6  # earnings compared over the session and the six days after 
 # A desk share class read as the desk name (DEC-0055 `desk_proxy`): the Radar or a file may write either.
 ALIASES = {"GOOG": "GOOGL"}
 OPEN = "09:30"
+MAX_PRICE = 1_000_000.0  # the dashboard schema's bounds (trading-lab-research radar-desk.schema.json)
+MAX_GAP_ATR = 1000.0
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _TIME = re.compile(r"(?:[01]\d|2[0-3]):[0-5]\d")
 _CODE = re.compile(r"[a-z_]{1,40}")
@@ -213,7 +222,14 @@ def _desk_symbol(raw: object) -> str | None:
 
 
 def _grade(value: object) -> int | None:
-    return value if isinstance(value, int) and not isinstance(value, bool) else None
+    """The Radar's 1-3 grade (its own schema's range), else None."""
+    return value if isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 3 else None
+
+
+def _level(value: object) -> float | None:
+    """A price level the dashboard accepts (above 0, at most 1,000,000), rounded to cents; else None."""
+    number = _number(value)
+    return round(number, 2) if number is not None and 0 < number <= MAX_PRICE else None
 
 
 def _round(value: float | None, places: int = 2) -> float | None:
@@ -280,7 +296,7 @@ def _focus_items(focus: Mapping[str, Any] | None) -> dict[str, Mapping[str, Any]
 
 
 def _price(level: object) -> float | None:
-    return _number(level.get("price")) if isinstance(level, Mapping) else None
+    return _level(level.get("price")) if isinstance(level, Mapping) else None
 
 
 def build(
@@ -348,24 +364,25 @@ def build(
                 "evidence_grade": _grade(row.get("evidence_grade")),
                 "chart_grade": _grade(row.get("chart_grade")),
                 "risk_tag": risk,
-                "support": _round(_number(row.get("support"))),
-                "resistance": _round(_number(row.get("resistance"))),
+                "support": _level(row.get("support")),
+                "resistance": _level(row.get("resistance")),
             }
         item = items.get(symbol)
         desk_block: dict[str, Any] | None = None
         gaps: dict[str, float | None] | None = None
         if item is not None:
-            atr = _number(item.get("atr"))
+            atr = _level(item.get("atr"))
             desk_block = {
-                "support": _round(_price(item.get("support"))),
-                "resistance": _round(_price(item.get("resistance"))),
-                "atr": _round(atr),
+                "support": _price(item.get("support")),
+                "resistance": _price(item.get("resistance")),
+                "atr": atr,
             }
             if radar_block is not None and atr:
                 gaps = {}
                 for side in ("support", "resistance"):
                     a, b = radar_block[side], desk_block[side]
-                    gaps[side] = None if a is None or b is None else round((a - b) / atr, 2)
+                    gap = None if a is None or b is None else round((a - b) / atr, 2)
+                    gaps[side] = gap if gap is not None and abs(gap) <= MAX_GAP_ATR else None
                 if any(g is not None and abs(g) > LEVEL_GAP_ATR for g in gaps.values()):
                     flags.add("LEVELS_DISAGREE")
         names.append(
@@ -585,6 +602,96 @@ def rebuild(folder: Path) -> list[str]:
     return [] if again == sealed else [f"{folder}: desk.json does not rebuild to the same bytes"]
 
 
+# ---------------------------------------------------------------------------------------------------------- send
+
+DASHBOARD_SCHEMA = "stocksdelta/radar-desk"
+_SENT = ("session", "next_session", "coverage", "macro_in_hold", "names")
+
+
+def dashboard_doc(folder: Path) -> dict[str, Any]:
+    """The dashboard's `stocksdelta/radar-desk` v1 document for a sealed desk folder that verifies: the sealed
+    desk.json without its `inputs` (folder names and hashes stay on the data branch), with run_id = the sha256 of
+    the sealed bytes and as_of = when it was sealed."""
+    problems = verify(folder)
+    if problems:
+        raise DeskError("; ".join(problems))
+    sealed = (folder / DESK).read_bytes()
+    manifest = json.loads((folder / MANIFEST).read_text(encoding="utf-8"))
+    desk = _json(sealed, DESK)
+    check(desk)
+    doc: dict[str, Any] = {"schema": DASHBOARD_SCHEMA, "schema_version": SCHEMA_VERSION, "run_id": sha256(sealed)}
+    doc["as_of"] = manifest["sealed_at"]
+    doc |= {key: desk[key] for key in _SENT}
+    assert_blind(doc)
+    return doc
+
+
+def _accepts(base: str, bypass: str | None) -> int | None:
+    request = urllib.request.Request(f"{base}/api/health", headers=publish._headers(bypass))
+    try:
+        with urllib.request.urlopen(request, timeout=publish.TIMEOUT_S) as response:
+            health: Any = json.load(response)
+    except (urllib.error.URLError, TimeoutError, ValueError) as error:
+        raise publish.PublishError(f"health check failed: {type(error).__name__}") from error
+    editions = health.get("editions") if isinstance(health, dict) else None
+    value = ((editions or {}).get("radar_desk") or {}).get("accepts") if isinstance(editions, dict) else None
+    return value if isinstance(value, int) else None
+
+
+def send(doc: Mapping[str, Any], base: str = publish.DEFAULT_BASE, now: float | None = None) -> publish.Sent:
+    """POST the document once to the signed ingest with the radar key; 200 stored or duplicate is success."""
+    secret = os.environ.get("RADAR_INGEST_SECRET")
+    if not secret:
+        raise publish.PublishError("RADAR_INGEST_SECRET is not set")
+    bypass = os.environ.get("VERCEL_AUTOMATION_BYPASS_SECRET")
+    accepted = _accepts(base, bypass)
+    if accepted is None or accepted < doc["schema_version"]:
+        raise publish.PublishError(
+            f"the site does not accept {DASHBOARD_SCHEMA} v{doc['schema_version']} (accepts {accepted})"
+        )
+    body = json.dumps(doc, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+    ts = int(now if now is not None else time.time())
+    headers = {
+        "content-type": "application/json",
+        "x-wt-timestamp": str(ts),
+        "x-wt-signature": publish.sign(secret, ts, body),
+        "x-wt-key-id": publish.KEY_ID,
+        **publish._headers(bypass),
+    }
+    request = urllib.request.Request(f"{base}/api/ingest", data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=publish.TIMEOUT_S) as response:
+            answer: Any = json.load(response)
+            status = str(answer.get("status", "stored")) if isinstance(answer, dict) else "stored"
+            return publish.Sent(response.status, status)
+    except urllib.error.HTTPError as error:
+        raise publish.PublishError(f"HTTP {error.code}") from error
+    except (urllib.error.URLError, TimeoutError, ValueError) as error:
+        raise publish.PublishError(f"send failed: {type(error).__name__}") from error
+
+
+def _send_cmd(args: argparse.Namespace) -> int:
+    folder = latest_verified(args.root, KIND, args.session) if _is_date(args.session) else None
+    if folder is None:
+        print(f"no sealed desk folder for {args.session!r}", file=sys.stderr)
+        return EXIT_INPUT
+    try:
+        doc = dashboard_doc(folder)
+    except (OSError, DeskError, BlindRuleError, KeyError) as error:
+        print(f"desk: {type(error).__name__}: {error}", file=sys.stderr)
+        return EXIT_INPUT
+    if args.dry_run:
+        print(json.dumps(doc, indent=1, sort_keys=True))
+        return 0
+    try:
+        sent = send(doc, args.base)
+    except publish.PublishError as error:
+        print(f"desk send: {error}", file=sys.stderr)
+        return EXIT_SEND
+    print(f"sent {folder.name}: HTTP {sent.status} {sent.outcome}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m options_funnel.desk", description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -600,11 +707,18 @@ def main(argv: list[str] | None = None) -> int:
     ck = sub.add_parser("check", help="rebuild sealed desk files and compare bytes")
     ck.add_argument("--root", type=Path, required=True)
     ck.add_argument("--session", required=True)
+    sn = sub.add_parser("send", help="send the session's latest sealed desk file to the dashboard")
+    sn.add_argument("--root", type=Path, required=True)
+    sn.add_argument("--session", required=True)
+    sn.add_argument("--base", default=publish.DEFAULT_BASE)
+    sn.add_argument("--dry-run", action="store_true", help="print the document instead of sending it")
     vf = sub.add_parser("verify", help="check sealed desk folders against their manifests")
     vf.add_argument("folders", type=Path, nargs="+")
     args = parser.parse_args(argv)
     if args.command == "seal":
         return _seal_cmd(args)
+    if args.command == "send":
+        return _send_cmd(args)
     if args.command == "check":
         if not _is_date(args.session):
             print(f"bad session {args.session!r}", file=sys.stderr)
