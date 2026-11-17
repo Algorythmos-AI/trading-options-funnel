@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from collections.abc import Mapping
@@ -9,7 +10,8 @@ from options_funnel.cli import EXIT_INPUT, EXIT_MISMATCH, EXIT_SEALED_DIFFERENT,
 from options_funnel.replay import replay_focus
 from options_funnel.seal import SealError, iv_rows_for, seal, verify
 
-NIGHTS = Path(__file__).resolve().parent / "fixtures" / "focus_nights"
+HERE = Path(__file__).resolve().parent
+NIGHTS = HERE / "fixtures" / "focus_nights"
 SESSIONS = sorted(p.stem for p in (NIGHTS / "levels").glob("*.json"))
 IV = NIGHTS / "iv_history.csv"
 
@@ -146,17 +148,35 @@ def test_iv_rows_edge_cases() -> None:
 def test_radar_edition_seals_verbatim_with_its_file_date(tmp_path: Path) -> None:
     edition = tmp_path / "2026-11-17.json"
     edition.write_bytes(b'{"schema":"stocksdelta/radar","scorecard":[{"hits":2}]}')
-    base = ["seal-radar", "--root", str(tmp_path), "--edition", str(edition)]
+    directory = HERE / "fixtures" / "directory"
+    skill = ["--skill", str(directory / "skill.bin"), "--directory", str(directory)]
+    base = ["seal-radar", "--root", str(tmp_path), "--edition", str(edition), *skill]
     assert main([*base, "--http-status", "200", "--sent-at", "2026-11-17T11:12:40Z"]) == 0
     folder = tmp_path / "data" / "radar" / "2026-11-17"
     assert (folder / "edition.json").read_bytes() == edition.read_bytes()
+    for name in ("nasdaqlisted.txt", "otherlisted.txt"):
+        assert (folder / name).read_bytes() == (directory / name).read_bytes()
     assert verify(folder) == []
     prov = json.loads((folder / "MANIFEST.json").read_text())["provenance"]
     assert prov["http_status"] == 200 and prov["sent_at"] == "2026-11-17T11:12:40Z"
+    assert prov["skill_sha256"] == hashlib.sha256((directory / "skill.bin").read_bytes()).hexdigest()
     assert main([*base, "--session", "2026-11-16"]) == EXIT_INPUT
     bad = tmp_path / "latest.json"
     bad.write_bytes(b"{}")
-    assert main(["seal-radar", "--root", str(tmp_path), "--edition", str(bad)]) == EXIT_INPUT
+    assert main(["seal-radar", "--root", str(tmp_path), "--edition", str(bad), *skill]) == EXIT_INPUT
+
+
+def test_a_broken_directory_file_is_refused(tmp_path: Path) -> None:
+    directory = tmp_path / "dir"
+    directory.mkdir()
+    good = HERE / "fixtures" / "directory"
+    (directory / "nasdaqlisted.txt").write_bytes((good / "nasdaqlisted.txt").read_bytes())
+    (directory / "otherlisted.txt").write_bytes(b"ACT Symbol|Security Name\nBRK.B|x\n")
+    edition = tmp_path / "2026-11-17.json"
+    edition.write_bytes(b"{}")
+    args = ["seal-radar", "--root", str(tmp_path), "--edition", str(edition), "--skill", str(good / "skill.bin")]
+    assert main([*args, "--directory", str(directory)]) == EXIT_INPUT
+    assert not (tmp_path / "data").exists()
 
 
 def test_wrong_file_set_and_overflow_are_refused(tmp_path: Path) -> None:
@@ -164,10 +184,11 @@ def test_wrong_file_set_and_overflow_are_refused(tmp_path: Path) -> None:
         seal(tmp_path, "radar", "2026-11-17", {"other.json": b"{}"}, "t", {})
     with pytest.raises(SealError):
         seal(tmp_path, "nope", "2026-11-17", {}, "t", {})
-    seal(tmp_path, "radar", "2026-11-17", {"edition.json": b"0"}, "t", {})
+    kind = "radar-receipts"
+    seal(tmp_path, kind, "2026-11-17", {"listing.json": b"0"}, "t", {})
     for n in range(1, 99):
-        seal(tmp_path, "radar", "2026-11-17", {"edition.json": str(n).encode()}, "t", {}, correction=True)
-    assert len(folders(tmp_path, "radar")) == 99  # the session plus r2..r99
+        seal(tmp_path, kind, "2026-11-17", {"listing.json": str(n).encode()}, "t", {}, correction=True)
+    assert len(folders(tmp_path, kind)) == 99  # the session plus r2..r99
     with pytest.raises(SealError, match="corrections"):
-        seal(tmp_path, "radar", "2026-11-17", {"edition.json": b"x"}, "t", {}, correction=True)
-    assert all(verify(tmp_path / "data" / "radar" / f) == [] for f in folders(tmp_path, "radar"))
+        seal(tmp_path, kind, "2026-11-17", {"listing.json": b"x"}, "t", {}, correction=True)
+    assert all(verify(tmp_path / "data" / kind / f) == [] for f in folders(tmp_path, kind))
