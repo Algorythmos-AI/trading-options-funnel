@@ -29,7 +29,7 @@ check: restricted lint typecheck test secrets
 # Needs pre-commit and gitleaks on PATH (for example `uv tool install pre-commit`, `brew install gitleaks`).
 hooks:
 	pre-commit install --hook-type pre-commit
-	install -m 755 scripts/pre-push .git/hooks/pre-push
+	install -m 755 scripts/pre-push "$$(git rev-parse --path-format=absolute --git-common-dir)/hooks/pre-push"
 
 wt-tree:
 	scripts/wt-tree.sh

@@ -40,7 +40,7 @@ Nothing from `trading-lab-research/research/`, its specifications or `knowledge/
 
 ## Branches
 
-`main` takes pull requests only. The `data` branch takes the routines' evidence commits only. Work in a feature
+`main` takes pull requests only. `data` is an orphan branch holding only `data/`, the routines' sealed evidence. Work in a feature
 branch, run `make check`, open a pull request into `main`.
 
 ## Everyday commands

@@ -4,8 +4,7 @@ Rules:
 - Everywhere: secrets (.env files, except .env.example), PDFs, the kill switch, trading-lab-research's restricted
   folders (research/, knowledge/), the local pinned tree and scratch (.wt-tree, var).
 - On any branch but `data`: no evidence (data/).
-- On `data`: evidence under data/ only. Every other path must be byte-identical to the same path on main
-  (GATE_MAIN_REF, default origin/main), so the data branch can never carry code or docs of its own.
+- On `data` (an orphan branch): nothing but sealed evidence under data/, so it can never carry code or docs.
 
 Usage:
   check_restricted.py                    the checked-out tree (GATE_BRANCH, else the current branch)
@@ -48,21 +47,15 @@ def tree(rev: str) -> dict[str, str]:
     return out
 
 
-def problems(rev: str, branch: str, main_ref: str) -> list[str]:
-    files = tree(rev)
-    found = [f"{path}: {why}" for path in files if (why := blocked(path, branch))]
+def problems(rev: str, branch: str) -> list[str]:
+    found = [f"{path}: {why}" for path in tree(rev) if (why := blocked(path, branch))]
     if branch == "data":
-        main = tree(main_ref)
-        for path, blob in files.items():
-            if not EVIDENCE.search(path) and main.get(path) != blob:
-                found.append(f"{path}: the data branch may change only data/ (differs from {main_ref})")
-        found += [f"{path}: missing on the data branch" for path in main if path not in files]
+        found += [f"{path}: the data branch holds only data/" for path in tree(rev) if not EVIDENCE.search(path)]
     return found
 
 
 def main(argv: list[str]) -> int:
     branch = os.environ.get("GATE_BRANCH") or git("rev-parse", "--abbrev-ref", "HEAD").strip()
-    main_ref = os.environ.get("GATE_MAIN_REF", "origin/main")
     if argv[:1] == ["--range"] and len(argv) == 2:
         revs = git("rev-list", "--reverse", argv[1]).split()
     elif not argv:
@@ -72,7 +65,7 @@ def main(argv: list[str]) -> int:
         return 2
     status = 0
     for rev in revs:
-        for problem in problems(rev, branch, main_ref):
+        for problem in problems(rev, branch):
             print(f"restricted: {rev[:12]} {problem} (branch {branch}; see AGENTS.md)", file=sys.stderr)
             status = 1
     return status
