@@ -1,0 +1,36 @@
+{
+ "files": {
+  "edition.json": {
+   "sha256": "7dc21295fdbe4ec15244312de364d119160a57c6fc7bc3d18846825b22a2493f",
+   "size": 23161
+  },
+  "nasdaqlisted.txt": {
+   "sha256": "2df47bc232976b261e59e59272e62834e14716f8e8a3bf999a84b7ae53c0538e",
+   "size": 347965
+  },
+  "otherlisted.txt": {
+   "sha256": "a62a0ad565a67272f71b278a86caf409c5638dac8c486be413de6383a0e7f04c",
+   "size": 543793
+  }
+ },
+ "kind": "radar",
+ "provenance": {
+  "code_commit": "78be377e3805c30dfe9c27332beb089f35e0ef8e",
+  "directory_fetched_at": "2026-11-17T12:29:51+00:00",
+  "directory_source": "nasdaqtrader.com/dynamic/SymDir",
+  "http_status": 200,
+  "routine": "trig_01B1TN3d4x7dZ3Wxad2LmYgb",
+  "sent_at": "2026-11-17T12:10:00+00:00",
+  "skill_sha256": "4f082a08380ec07ef94566edd1a50c61776ae643a39b7bbea33ca2f847b68517",
+  "skill_size": 103875,
+  "sources": {
+   "edition": "/mnt/project-files/radar-dashboard/outbox/2026-11-17.json",
+   "skill": "/mnt/project-files/skills/pre-market-radar.skill"
+  }
+ },
+ "replaces": null,
+ "schema": "options-funnel/seal",
+ "schema_version": 1,
+ "sealed_at": "2026-11-17T12:29:51+00:00",
+ "session": "2026-11-17"
+}
