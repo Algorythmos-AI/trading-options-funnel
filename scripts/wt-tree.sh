@@ -25,7 +25,16 @@ if [ "$head" != "$sha" ]; then
   exit 1
 fi
 # Ignored files count too: wt reads repository-relative data such as data/ and var/, which its .gitignore hides.
-dirty="$(git -C .wt-tree status --porcelain --ignored --untracked-files=all | grep -vE '__pycache__/|\.pyc$' || true)"
+# The only thing allowed to appear is bytecode Python writes next to a tracked source file.
+dirty=""
+while IFS= read -r line; do
+  path="${line:3}"
+  if [[ "$line" == "!! "* && "$path" =~ ^(.*/)__pycache__/([^/]+)\.cpython-[0-9]+\.pyc$ ]] \
+     && git -C .wt-tree ls-files --error-unmatch "${BASH_REMATCH[1]}${BASH_REMATCH[2]}.py" >/dev/null 2>&1; then
+    continue
+  fi
+  dirty+="$line"$'\n'
+done < <(git -C .wt-tree status --porcelain --ignored --untracked-files=all)
 if [ -n "$dirty" ]; then
   echo "wt-tree: .wt-tree has local changes; it must stay a clean read-only copy:" >&2
   echo "$dirty" >&2

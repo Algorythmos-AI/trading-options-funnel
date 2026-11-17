@@ -77,4 +77,40 @@ def test_values_the_guard_cannot_see_into_are_refused(doc: object) -> None:
 
 
 def test_plain_values_pass() -> None:
-    assert_blind({"a": [1, 2.5, None, True, "text", "{not json", {"b": "outcome"}]})
+    assert_blind({"a": [1, 2.5, None, True, "text", "a {b}", {"b": "outcome"}]})
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "PnL",
+        "netpnl",
+        "hitrate",
+        "fwdret",
+        "pl",
+        "gains",
+        "won",
+        "lost",
+        "winner",
+        "stopped_out",
+        "t1_reached",
+        "max_favorable_excursion",
+        "rr",
+        "prоfit",
+        "exitPlan",
+        "pre_r",
+    ],
+)
+def test_more_outcome_keys(key: str) -> None:
+    assert is_outcome_key(key)
+
+
+@pytest.mark.parametrize("key", ["stop", "target_1", "ceiling", "floor", "rs13", "gapPct", "ma20", "close_strength"])
+def test_plan_keys_pass(key: str) -> None:
+    assert not is_outcome_key(key)
+
+
+@pytest.mark.parametrize("text", ['"{\\"pnl\\":1}"', "{'pnl': 1}", "  [1]"])
+def test_strings_that_could_hold_documents_are_refused(text: str) -> None:
+    with pytest.raises(BlindRuleError):
+        assert_blind({"x": text})

@@ -49,7 +49,9 @@ def test_hash_is_canonical() -> None:
     assert canonical({"x": 2.5}) == {"x": 2.5}
 
 
-@pytest.mark.parametrize("bad", [{"x": float("nan")}, {1: "a"}, {"x": {1, 2}}, {"x": object()}])
+@pytest.mark.parametrize(
+    "bad", [{"x": float("nan")}, {1: "a"}, {"x": {1, 2}}, {"x": object()}, {"e\u0301": 1, "\u00e9": 2}]
+)
 def test_hash_refuses_non_json(bad: object) -> None:
     with pytest.raises(ValueError):
         inputs_sha256(bad)
@@ -72,6 +74,9 @@ def test_hash_refuses_non_json(bad: object) -> None:
         {"score": float("inf")},
         {"score": True},
         {"score": "1"},
+        {"score": 10**400},
+        {"reason": "hit_t1_win"},
+        {"reason": "stopped_out"},
         {"rank": 0},
         {"rank": 1.0},
         {"rank": True},
@@ -111,3 +116,13 @@ def test_duplicate_symbol_is_refused_on_write_and_read() -> None:
 def test_loading_is_strict(text: str) -> None:
     with pytest.raises(ValueError, match="line 1"):
         list(load_jsonl(text))
+
+
+def test_score_has_one_spelling() -> None:
+    assert record(score=2.0).score == 2 and isinstance(record(score=2.0).score, int)
+    assert record(score=2.0).to_json() == record(score=2).to_json()
+
+
+def test_huge_score_in_a_file_reports_its_line() -> None:
+    with pytest.raises(ValueError, match="line 1"):
+        list(load_jsonl(row(score=10**400)))

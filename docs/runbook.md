@@ -3,9 +3,10 @@
 ## The gate
 
 `make check` runs the restricted-path guard, ruff (lint and format check), mypy `--strict`, pytest and gitleaks
-over every ref. `make hooks` installs pre-commit for commits and `scripts/pre-push` for pushes. The pre-push hook
-checks out each pushed commit in a temporary worktree and runs `make check` there, so it judges exactly what is
-pushed, not the working copy. It needs `pre-commit` and `gitleaks` on PATH (`uv tool install pre-commit`,
+over every ref. `make hooks` installs pre-commit for commits and `scripts/pre-push` for pushes. For each pushed ref, the
+pre-push hook runs the restricted-path guard on every commit the remote does not have yet, each on its own tree,
+so a file added and deleted later is still caught. Then it runs `make check` on the tip in a temporary worktree,
+so it judges exactly what is pushed, not the working copy. It needs `pre-commit` and `gitleaks` on PATH (`uv tool install pre-commit`,
 `brew install gitleaks`).
 
 The organisation's Actions billing is failing as of 2026-11-17, so `.github/workflows/ci.yml` (the same gate plus
@@ -30,3 +31,10 @@ To bump the pin: change `wt.pin` in a pull request to a newer commit on trading-
 
 Every schedule is in New York time. Non-sessions come from the market calendar in the pinned tree, never from a
 weekday rule.
+
+## The data branch
+
+The routines commit sealed evidence to `data` from claude.ai, where no pre-push hook runs. The guard therefore
+holds the rule itself: on `data`, every path outside `data/` must be byte-identical to `main`
+(`GATE_MAIN_REF`, default `origin/main`), and CI runs on every push to `data` once Actions can start. To bring a
+change from `main` into `data`, merge `main` into `data`; nothing else may change there.

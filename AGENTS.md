@@ -48,7 +48,7 @@ branch, run `make check`, open a pull request into `main`.
 ```
 make bootstrap   # .venv from requirements-dev.lock.txt
 make check       # restricted-path guard + ruff + mypy --strict + pytest + gitleaks: the gate
-make hooks       # pre-commit on commit; scripts/pre-push runs the gate on each pushed commit
+make hooks       # pre-commit on commit; scripts/pre-push guards every new commit and gates the tip
 make wt-tree     # fetch trading-lab-research at the pinned commit into .wt-tree/
 make wt-env      # .venv-wt with trading-lab-research's own runtime lock, for code that imports wt
 ```

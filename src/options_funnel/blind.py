@@ -3,18 +3,22 @@
 Until EXP-0032's read nobody may compute or show an outcome for a focus name that was not picked. This repository
 therefore writes no outcome field at all. `assert_blind` refuses a document when:
 
+- any key is not plain ASCII (look-alike letters could spell an outcome word unseen);
 - any key, split into words (on "_", "-", spaces, camelCase and letter/digit boundaries), contains an outcome word,
   or has the word "r" (R-multiples: "r", "avg_r", "r_multiple");
+- any key, lower-cased with separators removed, contains an outcome stem ("netpnl", "hitrate", "fwdret");
 - any value is not plain JSON (dict with str keys, list, str, int, float, bool, None), so nothing can hide inside a
   set, tuple, object or generator;
-- any string value is itself a JSON object or array, so nothing can hide inside an embedded document.
+- any string value starts with "{", "[" or a quote, so no document (JSON, re-encoded JSON or a literal) hides in it.
+
+Deliberately blocked although they could describe a plan rather than a result: "exit" and anything with the word
+"r" (for example "exitPlan", "pre_r"). Plan fields use other words ("stop", "target", "ceiling", "floor").
 
 Each document type should also check its exact key set; this guard is the second line.
 """
 
 from __future__ import annotations
 
-import json
 import re
 
 OUTCOME_WORDS = frozenset(
@@ -46,8 +50,22 @@ OUTCOME_WORDS = frozenset(
         "rmultiple",
         "expectancy",
         "payoff",
+        "pl",
+        "gain",
+        "gains",
+        "won",
+        "lost",
+        "winner",
+        "winners",
+        "loser",
+        "losers",
+        "stopped",
+        "reached",
+        "excursion",
+        "rr",
     }
 )
+OUTCOME_STEMS = ("pnl", "hitrate", "winrate", "fwdret", "forwardret", "profit", "outcome", "drawdown", "excursion")
 _WORD = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+")
 
 
@@ -60,19 +78,20 @@ def key_words(key: str) -> list[str]:
     return [word.lower() for word in _WORD.findall(key)]
 
 
-def is_outcome_key(key: str) -> bool:
-    words = key_words(key)
+def is_outcome_words(words: list[str]) -> bool:
     return any(word == "r" or word in OUTCOME_WORDS for word in words)
 
 
-def _embedded_json(text: str) -> bool:
-    stripped = text.strip()
-    if not stripped or stripped[0] not in "[{":
-        return False
-    try:
-        return isinstance(json.loads(stripped), (dict, list))
-    except ValueError:
-        return False
+def is_outcome_key(key: str) -> bool:
+    if not key.isascii():
+        return True
+    squashed = re.sub(r"[^a-z0-9]", "", key.lower())
+    return is_outcome_words(key_words(key)) or any(stem in squashed for stem in OUTCOME_STEMS)
+
+
+def _embedded_document(text: str) -> bool:
+    stripped = text.lstrip()
+    return bool(stripped) and stripped[0] in "[{\"'"
 
 
 def assert_blind(document: object, path: str = "$") -> None:
@@ -88,8 +107,8 @@ def assert_blind(document: object, path: str = "$") -> None:
         for index, item in enumerate(document):
             assert_blind(item, f"{path}[{index}]")
     elif isinstance(document, str):
-        if _embedded_json(document):
-            raise BlindRuleError(f"{path}: a JSON document inside a string is not allowed")
+        if _embedded_document(document):
+            raise BlindRuleError(f"{path}: a document inside a string is not allowed")
     elif document is None or isinstance(document, (bool, int, float)):
         return
     else:

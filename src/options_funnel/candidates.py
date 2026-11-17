@@ -17,7 +17,7 @@ from datetime import date
 from enum import StrEnum
 from typing import Any
 
-from options_funnel.blind import assert_blind
+from options_funnel.blind import assert_blind, is_outcome_words
 
 SCHEMA = "options-funnel/candidate"
 SCHEMA_VERSION = 1
@@ -66,7 +66,13 @@ def canonical(value: Any) -> Any:
     if isinstance(value, dict):
         if not all(isinstance(key, str) for key in value):
             raise ValueError("input keys must be strings")
-        return {unicodedata.normalize("NFC", key): canonical(item) for key, item in value.items()}
+        out: dict[str, Any] = {}
+        for key, item in value.items():
+            name = unicodedata.normalize("NFC", key)
+            if name in out:
+                raise ValueError(f"keys {key!r} collide after normalising")
+            out[name] = canonical(item)
+        return out
     raise ValueError(f"{type(value).__name__} is not plain JSON")
 
 
@@ -102,11 +108,21 @@ class CandidateRecord:
             raise ValueError(f"verdict must be a Verdict, not {self.verdict!r}")
         _text("symbol", self.symbol, _SYMBOL)
         _text("reason", self.reason, _REASON)
+        if is_outcome_words(self.reason.split("_")):
+            raise ValueError(f"reason {self.reason!r} names an outcome (blind rule)")
         _text("inputs_sha256", self.inputs_sha256, _SHA256)
-        if self.score is not None and (
-            isinstance(self.score, bool) or not isinstance(self.score, (int, float)) or not math.isfinite(self.score)
-        ):
-            raise ValueError("score must be a finite number or None")
+        if self.score is not None:
+            if isinstance(self.score, bool) or not isinstance(self.score, (int, float)):
+                raise ValueError("score must be a finite number or None")
+            try:
+                value = float(self.score)
+            except OverflowError as error:
+                raise ValueError("score is out of range") from error
+            if not math.isfinite(value):
+                raise ValueError("score must be a finite number or None")
+            # One spelling per value: 2 and 2.0 are the same score and are stored as 2.
+            if isinstance(self.score, float) and value.is_integer():
+                object.__setattr__(self, "score", int(value))
         if self.rank is not None and (isinstance(self.rank, bool) or not isinstance(self.rank, int) or self.rank < 1):
             raise ValueError("rank must be a positive integer or None")
 

@@ -1,22 +1,49 @@
 #!/usr/bin/env bash
-# Run the gate on exactly what is being pushed: each pushed commit is checked out in a temporary worktree and
-# `make check` runs there, with GATE_BRANCH set to the branch it is pushed as. Installed by `make hooks`.
+# Installed by `make hooks`. For each pushed ref:
+#   1. the restricted-path guard on EVERY commit the remote does not have yet (so a file added and later deleted
+#      is still caught), each judged on its own tree;
+#   2. the full gate (`make check`) on the tip, in a temporary worktree, so it judges what is pushed, not the
+#      working copy.
 set -euo pipefail
 top="$(git rev-parse --show-toplevel)"
 zero="0000000000000000000000000000000000000000"
 status=0
-while read -r local_ref local_sha remote_ref _remote_sha; do
-  [ "$local_sha" = "$zero" ] && continue          # a branch deletion: nothing to check
+tmp=""
+cleanup() {
+  if [ -n "$tmp" ]; then
+    git -C "$top" worktree remove --force "$tmp/tree" 2>/dev/null || true
+    rm -rf "$tmp"
+    tmp=""
+  fi
+}
+trap cleanup EXIT INT TERM
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue          # a deletion: nothing to check
   branch="${remote_ref#refs/heads/}"
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha --not --remotes"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  echo "pre-push: checking $local_ref -> $branch"
+  # shellcheck disable=SC2086  # $range is two words on purpose for a new branch
+  if ! commits="$(git -C "$top" rev-list $range)"; then
+    echo "pre-push: cannot list the commits to push" >&2
+    status=1
+    continue
+  fi
+  for commit in $commits; do
+    if ! (cd "$top" && GATE_BRANCH="$branch" .venv/bin/python scripts/check_restricted.py --range "$commit^!"); then
+      status=1
+    fi
+  done
   tmp="$(mktemp -d)"
   git -C "$top" worktree add -q --detach "$tmp/tree" "$local_sha"
   ln -s "$top/.venv" "$tmp/tree/.venv"
-  echo "pre-push: checking $local_sha ($local_ref -> $branch)"
   if ! (cd "$tmp/tree" && GATE_BRANCH="$branch" make -s check); then
-    echo "pre-push: the gate failed for $local_ref; nothing was pushed" >&2
     status=1
   fi
-  git -C "$top" worktree remove --force "$tmp/tree"
-  rm -rf "$tmp"
+  cleanup
+  [ "$status" = 0 ] || echo "pre-push: the gate failed for $local_ref; nothing was pushed" >&2
 done
 exit "$status"
