@@ -189,10 +189,15 @@ debugging: [`docs/runbook.md`](docs/runbook.md).
 
 ## Owner steps still open
 
-- Record in EXP-0038's README that the repository is private (precondition 1; done on GitHub on 2026-11-18).
-- Protect `data` with a ruleset: no deletion, no force push (EXP-0038 precondition 4).
-- Require a pull request on `main` (its ruleset already blocks deletion and force push).
-- Accept DEC-0055 in trading-lab-research.
+The repository settings are done: it is private (2026-11-18), `data` cannot be deleted or force-pushed (ruleset
+`protect-data`), and `main` changes only by a pull request merged with a merge commit once `check` passes (ruleset
+`main-via-pr`). What is left is in trading-lab-research, where EXP-0038's README still marks these preconditions
+"not yet":
+
+- Write down precondition 1 (repository private) and precondition 4 (`data` protected).
+- Write down preconditions 2 and 3 (Radar seal step and receipt listing sealed) once their first sealed folders are
+  checked.
+- Accept DEC-0055 (precondition 6).
 
 EXP-0038's first counted session is the first regular session after the last of its preconditions is written in its
 README.

@@ -66,13 +66,15 @@ The routines run in auto mode, where a classifier checks each command. Steps wri
 it; the same command requested by another session may be blocked, and the routine then stops as instructed. The
 routine needs `Algorythmos-AI/trading-options-funnel` attached as a repository to push to `data`.
 
-## Protecting the branches (owner, in GitHub settings)
+## Protecting the branches
 
-Nothing on GitHub stops a force-push or a deletion of `data` yet, and a token that can push to `data` can also push
-to `main`. Suggested rulesets (Settings → Rules → Rulesets, or the API):
+Since 2026-11-18 two repository rulesets protect the branches:
 
-- `data`: block deletion and force pushes.
-- `main`: require a pull request before merging; block deletion and force pushes.
+- `protect-data`: `data` cannot be deleted or force-pushed, by anyone. Ordinary pushes from the routines still go in.
+- `main-via-pr`: `main` changes only through a pull request, merged with a merge commit once the CI `check` job
+  passes. An admin may bypass this on a pull request only, never with a direct push.
+
+The organisation's `protect-default-branches` also blocks deletion and force pushes on `main`.
 
 ## Why the sealed copies matter
 
