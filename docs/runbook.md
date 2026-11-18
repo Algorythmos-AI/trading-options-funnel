@@ -10,8 +10,9 @@ so it judges exactly what is pushed, not the working copy. It needs `pre-commit`
 `brew install gitleaks`).
 
 `.github/workflows/ci.yml` runs the same gate plus actionlint, with actions pinned by commit and gitleaks
-checksum-verified, on every pull request and on `main` (running since 2026-11-17). The pre-push hook still runs
-first: never push with `--no-verify`.
+checksum-verified, on every pull request and on `main`. It ran while the repository was public; since it went private
+on 2026-11-18, GitHub refuses to start the job until the organisation's Actions billing is fixed. Until then the
+pre-push hook is the gate: never push with `--no-verify`.
 
 ## The pinned trading-lab-research tree
 
