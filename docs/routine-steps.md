@@ -18,7 +18,7 @@ code, including 1 or a traceback, means the step itself broke: stop and say so.
 Append after the SHADOW STEP. It must run in the same firing, before the pre-open routine (08:50 New York) adds its
 block to the focus file: the seal refuses a focus file that already has it.
 
-> SEAL STEP (added <date> at Sam's request; trading-options-funnel plan step S3). Only on a trading day, only after
+> SEAL STEP (added 2026-11-17 at Sam's request; trading-options-funnel plan step S3). Only on a trading day, only after
 > every step above has finished, whatever their result, and only if `focus.py pick` wrote tonight's focus file.
 > Write nothing under /mnt/project-files; send nothing to the dashboard; push only to the `data` branch of
 > trading-options-funnel; do not print or reply with any price, volume or other value.
@@ -35,16 +35,36 @@ block to the focus file: the seal refuses a focus file that already has it.
 
 ## Radar edition to dashboard (`trig_01B1TN3d4x7dZ3Wxad2LmYgb`)
 
-Append at the end:
+As it runs since 2026-11-18. The radar run usually pushes the edition to the dashboard itself, so this routine's own
+send normally answers "duplicate": the seal runs on HTTP 200, stored or duplicate.
 
-> SEAL STEP (added <date>; trading-options-funnel plan step S3). Only when send_outbox.py reported HTTP 200 for
-> the file it sent. Same limits and steps 0–2 as the options seal step.
-> 3. `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli seal-radar --root /tmp/funnel-data --routine trig_01B1TN3d4x7dZ3Wxad2LmYgb --edition /mnt/project-files/radar-dashboard/outbox/<the file's date>.json --skill /mnt/project-files/skills/pre-market-radar.skill --fetch-directory --http-status 200 --sent-at <the send time, UTC ISO>`.
+Retries: if today's outbox file is missing, the routine schedules a retry 20 minutes later, and again at each retry,
+until the file appears or it is past 13:45 UTC (08:45 New York); then it tells the coordinator session. Each retry
+runs the send, then the SEAL STEP and the DESK STEP below.
+
+> SEAL STEP (added 2026-11-17 at Sam's request; plan step S3). Only when send_outbox.py reported HTTP 200 for
+> today's file, stored or duplicate. For a duplicate, `--sent-at` is the UTC time it was confirmed. Same limits and
+> steps 0–2 as the options seal step.
+> 3. `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.cli seal-radar --root /tmp/funnel-data --routine trig_01B1TN3d4x7dZ3Wxad2LmYgb --edition /mnt/project-files/radar-dashboard/outbox/<the file's date>.json --skill /mnt/project-files/skills/pre-market-radar.skill --fetch-directory --http-status 200 --sent-at <UTC ISO time>`.
 >    It also downloads that morning's Nasdaq Trader symbol directory (nasdaqlisted.txt, otherlisted.txt), retrying a failed fetch, and records the skill bundle's sha256; DEC-0055 needs both. If the directory cannot be fetched it still seals the edition, prints a warning and records why: say so in the reply, because DEC-0055 cannot count that session. Running it again for the same edition seals nothing and fetches nothing. This step must finish before 09:30 New York.
 >    The session is the date in the file's name. A same-day re-send of a changed edition exits 6: then run the same
 >    command with `--correction`, which seals it beside the first, never over it.
 > 4. Commit and push as in the options step, message "seal radar <date>".
 > 5. Update the status line only; reply only if a part was blocked or a command failed.
+
+> DESK STEP (added 2026-11-17; funnel plan Phase 1, display only). Only after the SEAL STEP ended with exit 0 for
+> today's edition. Same limits; it sends nothing to the dashboard except step 4. Uses the SEAL STEP's clones.
+> 1. Config, three files from one trading-lab-research commit: `rm -rf /tmp/wt-cfg && git clone -q --depth 1 --filter=blob:none --sparse https://github.com/Algorythmos-AI/trading-lab-research /tmp/wt-cfg && git -C /tmp/wt-cfg sparse-checkout set --no-cone /config/events/earnings.csv /config/events/macro_events.csv /config/options_desk.yaml`, then `WT=$(git -C /tmp/wt-cfg rev-parse HEAD)`.
+> 2. Seal: `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.desk seal --root /tmp/funnel-data --session <date> --earnings /tmp/wt-cfg/config/events/earnings.csv --macro /tmp/wt-cfg/config/events/macro_events.csv --desk-config /tmp/wt-cfg/config/options_desk.yaml --wt-commit $WT --routine trig_01B1TN3d4x7dZ3Wxad2LmYgb`. Exit 6 only after a radar correction: run again with `--correction`.
+> 3. Commit and push `data/radar-desk`, only if step 2 printed "sealed", message "seal radar desk <date>".
+> 4. Send: `cd /tmp/funnel-code && PYTHONPATH=src python3 -m options_funnel.desk send --root /tmp/funnel-data --session <date>`. Exit 0 stored or duplicate; exit 7 with "does not accept" means the dashboard release with `stocksdelta/radar-desk` is not live: say so once, do not retry.
+> 5. Fold the result into the seal step's one-line reply ("desk seal exit N, pushed yes/no, send exit N").
+
+## Permissions in the cloud routines
+
+The routines run in auto mode, where a classifier checks each command. Steps written in the routine's own prompt pass
+it; the same command requested by another session may be blocked, and the routine then stops as instructed. The
+routine needs `Algorythmos-AI/trading-options-funnel` attached as a repository to push to `data`.
 
 ## Protecting the branches (owner, in GitHub settings)
 
