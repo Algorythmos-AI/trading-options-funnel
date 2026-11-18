@@ -9,8 +9,9 @@ so a file added and deleted later is still caught. Then it runs `make check` on 
 so it judges exactly what is pushed, not the working copy. It needs `pre-commit` and `gitleaks` on PATH (`uv tool install pre-commit`,
 `brew install gitleaks`).
 
-The organisation's Actions billing is failing as of 2026-11-17, so `.github/workflows/ci.yml` (the same gate plus
-actionlint, with actions pinned by commit and gitleaks checksum-verified) does not start yet. Until it does, the
+`.github/workflows/ci.yml` runs the same gate plus actionlint, with actions pinned by commit and gitleaks
+checksum-verified, on every pull request and on `main`. It ran while the repository was public; since it went private
+on 2026-11-18, GitHub refuses to start the job until the organisation's Actions billing is fixed. Until then the
 pre-push hook is the gate: never push with `--no-verify`.
 
 ## The pinned trading-lab-research tree
@@ -36,7 +37,7 @@ weekday rule.
 
 `data` is an orphan branch: it shares no history with `main` and holds nothing but `data/`. The routines commit
 sealed evidence there from claude.ai, where no pre-push hook runs, so the guard carries the rule itself: on `data`,
-any path outside `data/` is refused, and CI runs on every push to `data` once Actions can start. Code is never
+any path outside `data/` is refused. CI does not run on `data`; the guard is the only check there. Code is never
 needed there: the routine runs this repository's code from a checkout of `main` and writes into a checkout of
 `data`.
 
