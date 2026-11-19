@@ -1,0 +1,111 @@
+{
+ "session": "2026-11-20",
+ "built_from": "2026-11-19",
+ "picked_at": "2026-11-19T21:53:54+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "AMZN",
+   "bias": "support",
+   "why": "Closed 0.2 ATR under resistance; close weak; option volume 0.7x normal.",
+   "close": 257.16,
+   "atr": 11.2,
+   "resistance": {
+    "price": 259.51,
+    "name": "SUPPLY"
+   },
+   "support": {
+    "price": 254.0,
+    "name": "WTDL/MA50"
+   },
+   "breakout_above": 259.51,
+   "hold_above": 254.0,
+   "target_up": {
+    "price": 274.0,
+    "name": "PDH/WTDH/PWH"
+   },
+   "target_down": {
+    "price": 245.03,
+    "name": "MA200"
+   },
+   "score": 4.825,
+   "rank": 1
+  },
+  {
+   "symbol": "AVGO",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close weak; option volume 0.6x normal.",
+   "close": 346.55,
+   "atr": 20.89,
+   "resistance": {
+    "price": 367.85,
+    "name": "MA200/SUPPLY/PDH/WTDH/PWH"
+   },
+   "support": {
+    "price": 343.86,
+    "name": "MA50/PDL"
+   },
+   "breakout_above": 367.85,
+   "hold_above": 343.86,
+   "target_up": {
+    "price": 380.84,
+    "name": "PMH"
+   },
+   "target_down": {
+    "price": 333.24,
+    "name": "MA20"
+   },
+   "score": 4.82,
+   "rank": 2
+  },
+  {
+   "symbol": "MSFT",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close weak; option volume 0.5x normal.",
+   "close": 498.48,
+   "atr": 18.8,
+   "resistance": {
+    "price": 501.08,
+    "name": "SUPPLY"
+   },
+   "support": {
+    "price": 496.51,
+    "name": "WTDL/DEMAND/PDL/DEMAND"
+   },
+   "breakout_above": 501.08,
+   "hold_above": 496.51,
+   "target_up": {
+    "price": 512.17,
+    "name": "PML/PWL"
+   },
+   "target_down": {
+    "price": 443.18,
+    "name": "MA200"
+   },
+   "score": 4.755,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "range",
+   "why": "Closed 0.7 ATR under resistance; close weak; option volume 1.1x normal.",
+   "close": 715.82,
+   "atr": 14.69,
+   "resistance": {
+    "price": 726.79,
+    "name": "SUPPLY"
+   },
+   "support": null,
+   "breakout_above": 726.79,
+   "hold_above": null,
+   "target_up": {
+    "price": 739.88,
+    "name": "PDH/PWL"
+   },
+   "target_down": null,
+   "score": 3.585,
+   "rank": 4
+  }
+ ],
+ "premarket": null
+}
