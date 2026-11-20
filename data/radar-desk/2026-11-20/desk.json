@@ -1,0 +1,319 @@
+{
+ "coverage": {
+  "desk_names": 12,
+  "focus_names": 4,
+  "radar_calendar_has_earnings": false,
+  "radar_covered": 10
+ },
+ "inputs": {
+  "edition_sha256": "fde48882b2fdb7563bc7430482a9e20c486bb837d603e4fbb18f9303eed77325",
+  "focus_folder": "2026-11-20",
+  "focus_sha256": "fe1fbea0f7088eace7f492341067a23ac38efd0bd8a8b1327ee9bd4e88829856",
+  "radar_folder": "2026-11-20",
+  "wt_commit": "6b7a8cd9dc99ea706e31519c95b9fbdf555e6fcc"
+ },
+ "macro_in_hold": [],
+ "names": [
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "breakout_watch",
+     "mega_cap_options",
+     "support_plays"
+    ],
+    "resistance": null,
+    "risk_tag": false,
+    "support": 341.43
+   },
+   "symbol": "AAPL"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [
+    "RADAR_NOT_COVERED"
+   ],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": null,
+   "symbol": "AMD"
+  },
+  {
+   "desk_levels": {
+    "atr": 11.2,
+    "resistance": 259.51,
+    "support": 254.0
+   },
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [
+    "LEVELS_DISAGREE"
+   ],
+   "focus": true,
+   "level_gap_atr": {
+    "resistance": 1.36,
+    "support": 0.08
+   },
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options"
+    ],
+    "resistance": 274.75,
+    "risk_tag": false,
+    "support": 254.9
+   },
+   "symbol": "AMZN"
+  },
+  {
+   "desk_levels": {
+    "atr": 20.89,
+    "resistance": 367.85,
+    "support": 343.86
+   },
+   "earnings": {
+    "csv_dates": [],
+    "next": {
+     "date": "2026-12-09",
+     "when": "amc"
+    },
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [
+    "RADAR_NOT_COVERED"
+   ],
+   "focus": true,
+   "level_gap_atr": null,
+   "radar": null,
+   "symbol": "AVGO"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options",
+     "support_plays"
+    ],
+    "resistance": 312.47,
+    "risk_tag": false,
+    "support": 272.11
+   },
+   "symbol": "GOOGL"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options"
+    ],
+    "resistance": 612.43,
+    "risk_tag": false,
+    "support": 592.6
+   },
+   "symbol": "META"
+  },
+  {
+   "desk_levels": {
+    "atr": 18.8,
+    "resistance": 501.08,
+    "support": 496.51
+   },
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": true,
+   "level_gap_atr": {
+    "resistance": 0.89,
+    "support": -0.62
+   },
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options",
+     "support_plays"
+    ],
+    "resistance": 517.78,
+    "risk_tag": false,
+    "support": 484.79
+   },
+   "symbol": "MSFT"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options"
+    ],
+    "resistance": 188.88,
+    "risk_tag": false,
+    "support": null
+   },
+   "symbol": "NVDA"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options"
+    ],
+    "resistance": 161.45,
+    "risk_tag": false,
+    "support": 153.36
+   },
+   "symbol": "PLTR"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options"
+    ],
+    "resistance": 682.99,
+    "risk_tag": false,
+    "support": 600.28
+   },
+   "symbol": "QQQ"
+  },
+  {
+   "desk_levels": {
+    "atr": 14.69,
+    "resistance": 726.79,
+    "support": null
+   },
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": true,
+   "level_gap_atr": {
+    "resistance": 0.37,
+    "support": null
+   },
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "breakout_watch",
+     "mega_cap_options"
+    ],
+    "resistance": 732.16,
+    "risk_tag": false,
+    "support": 671.19
+   },
+   "symbol": "SPY"
+  },
+  {
+   "desk_levels": null,
+   "earnings": {
+    "csv_dates": [],
+    "next": null,
+    "radar_dates": null,
+    "sources_agree": null
+   },
+   "flags": [],
+   "focus": false,
+   "level_gap_atr": null,
+   "radar": {
+    "chart_grade": null,
+    "evidence_grade": null,
+    "lists": [
+     "mega_cap_options"
+    ],
+    "resistance": 379.75,
+    "risk_tag": false,
+    "support": 373.03
+   },
+   "symbol": "TSLA"
+  }
+ ],
+ "next_session": "2026-11-23",
+ "schema": "options-funnel/radar-desk",
+ "schema_version": 1,
+ "session": "2026-11-20"
+}

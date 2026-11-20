@@ -1,0 +1,36 @@
+{
+ "files": {
+  "desk.json": {
+   "sha256": "9dbab53cae41e09c01e13f8a9376715b99cef69675f775b8afa2566b564d53c6",
+   "size": 5890
+  },
+  "earnings.csv": {
+   "sha256": "61ee8e23861cdfa218899f26210df6eb6e06cf156c74803dc393ebe919d66183",
+   "size": 1336
+  },
+  "macro_events.csv": {
+   "sha256": "3ad8538ff00ccd993e81a760535ce93ac5020ebfe87b465a2bac15222a8741fb",
+   "size": 25745
+  },
+  "options_desk.yaml": {
+   "sha256": "21bfebbb59bdfb18e7564bdc1e9f63df3b86f4c0cb53006842c4b92583d76351",
+   "size": 2027
+  }
+ },
+ "kind": "radar-desk",
+ "provenance": {
+  "code_commit": "77535588d5a2ac1484fc23ffecfd5a5a16d9fc66",
+  "routine": "trig_01B1TN3d4x7dZ3Wxad2LmYgb",
+  "sources": {
+   "desk_config": "/tmp/wt-cfg/config/options_desk.yaml",
+   "earnings": "/tmp/wt-cfg/config/events/earnings.csv",
+   "macro": "/tmp/wt-cfg/config/events/macro_events.csv"
+  },
+  "wt_commit": "6b7a8cd9dc99ea706e31519c95b9fbdf555e6fcc"
+ },
+ "replaces": null,
+ "schema": "options-funnel/seal",
+ "schema_version": 1,
+ "sealed_at": "2026-11-20T10:52:19+00:00",
+ "session": "2026-11-20"
+}
