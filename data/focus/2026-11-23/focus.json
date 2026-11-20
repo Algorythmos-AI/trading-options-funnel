@@ -1,0 +1,108 @@
+{
+ "session": "2026-11-23",
+ "built_from": "2026-11-20",
+ "picked_at": "2026-11-20T21:55:47+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "GOOGL",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close weak; option volume 1.3x normal.",
+   "close": 265.68,
+   "atr": 11.42,
+   "resistance": {
+    "price": 272.36,
+    "name": "SUPPLY"
+   },
+   "support": {
+    "price": 264.22,
+    "name": "PDL/PWL"
+   },
+   "breakout_above": 272.36,
+   "hold_above": 264.22,
+   "target_up": {
+    "price": 283.15,
+    "name": "PDH"
+   },
+   "target_down": null,
+   "score": 5.503,
+   "rank": 1
+  },
+  {
+   "symbol": "NVDA",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close weak; option volume 1.2x normal.",
+   "close": 125.81,
+   "atr": 12.77,
+   "resistance": {
+    "price": 143.66,
+    "name": "PDH"
+   },
+   "support": {
+    "price": 124.52,
+    "name": "PDL/PWL"
+   },
+   "breakout_above": 143.66,
+   "hold_above": 124.52,
+   "target_up": {
+    "price": 163.0,
+    "name": "PWH"
+   },
+   "target_down": null,
+   "score": 5.48,
+   "rank": 2
+  },
+  {
+   "symbol": "PLTR",
+   "bias": "support",
+   "why": "Closed 0.1 ATR above support; close weak; option volume 1.0x normal.",
+   "close": 143.67,
+   "atr": 9.83,
+   "resistance": {
+    "price": 152.5,
+    "name": "PDH/MA200"
+   },
+   "support": {
+    "price": 142.29,
+    "name": "PDL/PWL"
+   },
+   "breakout_above": 152.5,
+   "hold_above": 142.29,
+   "target_up": {
+    "price": 167.13,
+    "name": "PWH"
+   },
+   "target_down": {
+    "price": 126.97,
+    "name": "DEMAND"
+   },
+   "score": 5.248,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "support",
+   "why": "Closed 0.3 ATR above support; close weak; option volume 1.1x normal.",
+   "close": 690.86,
+   "atr": 16.07,
+   "resistance": {
+    "price": 715.65,
+    "name": "SUPPLY"
+   },
+   "support": {
+    "price": 686.76,
+    "name": "PDL/PWL"
+   },
+   "breakout_above": 715.65,
+   "hold_above": 686.76,
+   "target_up": {
+    "price": 726.79,
+    "name": "SUPPLY"
+   },
+   "target_down": null,
+   "score": 4.737,
+   "rank": 4
+  }
+ ],
+ "premarket": null
+}
