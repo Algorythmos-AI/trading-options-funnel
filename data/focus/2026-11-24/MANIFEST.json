@@ -1,0 +1,34 @@
+{
+ "files": {
+  "focus.json": {
+   "sha256": "f6f6c8371dc0382cb37d76f5438a86b8610e2dc2d594c33fc7ce811981875215",
+   "size": 2341
+  },
+  "iv_rows.csv": {
+   "sha256": "875333b5b6ee6c4f212c58bdf9aba7f49ac511f5e01889ed31abdf76f9f9229b",
+   "size": 2113
+  },
+  "levels.json": {
+   "sha256": "faa3dccc89f49c6492da4c087d8bb3d66970bb667205da73e37a7424f0133855",
+   "size": 98281
+  }
+ },
+ "kind": "focus",
+ "provenance": {
+  "built_from": "2026-11-23",
+  "code_commit": "77535588d5a2ac1484fc23ffecfd5a5a16d9fc66",
+  "iv_history_sha256": "933f064113affdb2e020b0d4217eab62986e96be1b00f1e59f3ab210cf4595a1",
+  "iv_history_size": 63787,
+  "routine": "trig_01EUa31y41kKS4WuJqBXJwWN",
+  "sources": {
+   "focus": "/mnt/project-files/options-tab/data/focus/2026-11-24.json",
+   "iv_history": "/mnt/project-files/options-tab/data/iv_history.csv",
+   "levels": "/mnt/project-files/options-tab/data/levels/2026-11-24.json"
+  }
+ },
+ "replaces": null,
+ "schema": "options-funnel/seal",
+ "schema_version": 1,
+ "sealed_at": "2026-11-23T21:57:15+00:00",
+ "session": "2026-11-24"
+}
