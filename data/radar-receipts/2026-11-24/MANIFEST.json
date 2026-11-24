@@ -1,0 +1,24 @@
+{
+ "files": {
+  "listing.json": {
+   "sha256": "bb687d3ea93dabd565a83c8b1a8bc36587da7b68fef5510853ebb8b10659f95f",
+   "size": 418
+  }
+ },
+ "kind": "radar-receipts",
+ "provenance": {
+  "base": "https://lab.algorythmos.com",
+  "code_commit": "77535588d5a2ac1484fc23ffecfd5a5a16d9fc66",
+  "radar_edition_sha256": "7c519261ab52fb7fae2833ec30e7d6202e65e7e30707fb08570d85c48b0e5bbd",
+  "routine": "trig_01EUa31y41kKS4WuJqBXJwWN",
+  "rows_matching_sealed_edition": [
+   "radar-2026-11-24-104619"
+  ],
+  "sources": {}
+ },
+ "replaces": null,
+ "schema": "options-funnel/seal",
+ "schema_version": 1,
+ "sealed_at": "2026-11-24T21:56:07+00:00",
+ "session": "2026-11-24"
+}
