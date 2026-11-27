@@ -1,0 +1,114 @@
+{
+ "session": "2026-11-30",
+ "built_from": "2026-11-27",
+ "picked_at": "2026-11-27T21:55:54+00:00",
+ "method": "Nearest level in ATRs, option activity and range, from the close; SPY always included.",
+ "items": [
+  {
+   "symbol": "PLTR",
+   "bias": "breakout",
+   "why": "Closed 0.1 ATR under resistance; close strong; option volume 0.6x normal.",
+   "close": 172.17,
+   "atr": 9.26,
+   "resistance": {
+    "price": 173.22,
+    "name": "PDH/PWH"
+   },
+   "support": {
+    "price": 164.8,
+    "name": "PDL/MA20"
+   },
+   "breakout_above": 173.22,
+   "hold_above": 164.8,
+   "target_up": {
+    "price": 180.81,
+    "name": "PML"
+   },
+   "target_down": {
+    "price": 154.48,
+    "name": "MA200"
+   },
+   "score": 4.911,
+   "rank": 1
+  },
+  {
+   "symbol": "GOOGL",
+   "bias": "breakout",
+   "why": "Closed 0.2 ATR under resistance; close mid; option volume 0.7x normal.",
+   "close": 274.96,
+   "atr": 11.74,
+   "resistance": {
+    "price": 276.92,
+    "name": "PML/SUPPLY"
+   },
+   "support": {
+    "price": 272.36,
+    "name": "SUPPLY"
+   },
+   "breakout_above": 276.92,
+   "hold_above": 272.36,
+   "target_up": {
+    "price": 285.14,
+    "name": "PWH"
+   },
+   "target_down": {
+    "price": 262.73,
+    "name": "PWL"
+   },
+   "score": 4.817,
+   "rank": 2
+  },
+  {
+   "symbol": "AAPL",
+   "bias": "breakout",
+   "why": "Closed 0.1 ATR under resistance; close strong; option volume 0.7x normal.",
+   "close": 358.54,
+   "atr": 7.77,
+   "resistance": {
+    "price": 359.5,
+    "name": "PDH/PWH"
+   },
+   "support": {
+    "price": 355.64,
+    "name": "PDL"
+   },
+   "breakout_above": 359.5,
+   "hold_above": 355.64,
+   "target_up": null,
+   "target_down": {
+    "price": 351.73,
+    "name": "PMH"
+   },
+   "score": 4.511,
+   "rank": 3
+  },
+  {
+   "symbol": "SPY",
+   "bias": "breakout",
+   "why": "Closed 0.3 ATR under resistance; close strong; option volume 0.5x normal.",
+   "close": 728.32,
+   "atr": 17.11,
+   "resistance": {
+    "price": 733.34,
+    "name": "MA200"
+   },
+   "support": {
+    "price": 719.61,
+    "name": "PDL"
+   },
+   "breakout_above": 733.34,
+   "hold_above": 719.61,
+   "target_up": {
+    "price": 750.36,
+    "name": "PML"
+   },
+   "target_down": {
+    "price": 695.45,
+    "name": "PWL"
+   },
+   "score": 4.097,
+   "rank": 4
+  }
+ ],
+ "premarket": null
+}
